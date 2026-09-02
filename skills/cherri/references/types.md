@@ -1,0 +1,476 @@
+# Types
+
+## Value Types
+
+### Text
+
+```ruby
+@variable = "text"
+@text = "text {@variable} \n"
+```
+
+Text literals support the interpolation of variables and escape characters.
+
+**Standard escaped characters interpolated:**
+
+- `\"` double quote
+- `\n` new line
+- `\t` tab
+- `\\` backslash
+
+For example:
+
+```ruby
+@multi = "multi\nline\ntext"
+```
+
+Multiline text is also supported, however:
+
+```ruby
+@multi = "multi
+line
+text"
+```
+
+### Raw Text
+
+```ruby
+@raw = 'i\'m text'
+```
+
+Raw text cancels out interpolation, except for escaped single quotes. As a result, they compile much faster than standard text literals.
+
+One caveat to raw text is that it is not allowed in Dictionaries or Arrays. This is because a dictionary or array must be a valid JSON object.
+
+### Number
+
+```ruby
+@number = 42
+```
+
+### Float
+
+```ruby
+@float = 0.5
+```
+
+### Expression
+
+Expressions are numeric values or variable references that are separated by any of the following arithmetic operators:
+
+- `+` Add
+- `-` Subtract
+- `*` Multiply
+- `/` Divide
+- `%` Modulus
+
+```ruby
+@expression = 54 + (6 * 7)
+@number = 42
+@number = 54 * @number + (6 * 7)
+@expression = @number + @number
+```
+
+Only two operands will compile to a **Math** action:
+
+```ruby
+@expression = 54 + 6
+```
+
+### Boolean
+
+Booleans translate to a number value of `1` for `true` and `0` for `false`.
+
+```ruby
+@boolVarTrue = true
+@boolVarFalse = false
+```
+
+Booleans can be used in conditionals.
+
+```ruby
+@boolVarTrue = true
+if @boolVarTrue == true {
+    /* ... */
+}
+```
+
+### Dictionary
+
+You can declare a dictionary using valid JSON syntax.
+
+```ruby
+/* Empty dictionaries */
+@x: dictionary
+@y = {}
+
+@text = "text"
+@dictionary = {
+    "key1": "value {@text}",
+    "key2": 5,
+    "key3": true,
+    "key4": [
+        "item1",
+        "item 2",
+        "item3"
+    ]
+}
+```
+
+You can access a dictionary value by key:
+
+```ruby
+@dictionary = {}
+
+// allows for variable references
+getValue(@dictionary, "key")
+
+// must be a raw string, so no variable references are allowed.
+@value = @dictionary['key']
+```
+
+### Array
+
+An array is a variable that has been or will be populated with multiple iterable values.
+
+The contents of an array value must be valid JSON syntax.
+
+```ruby
+/* Empty arrays */
+@x: array
+@y = []
+
+@int = 42
+@array = [5, "test", {"test":5}, "{@int}"]
+
+/* Add a value to the array variable */
+@array += "another test"
+```
+
+You can use the [`for`](control-flow#repeat-with-each) statement to iterate over the values contained in the array variable.
+
+```ruby
+@items = ["Item 1","Item 2"]
+for item in @items {
+    /* ... */
+}
+```
+
+You can easily append to an array using the `+=` syntax.
+
+```ruby
+@x: array
+@x += 5
+```
+
+This adds the output of the **Number** action with a value of 5 to the array variable `x`.
+
+So `x` now contains 1 item with a number value of `5`.
+
+Items in an array or added to an array cannot be removed. If you need a new array of items, iterate the array using `for`  and add only specific items using a conditional to a new array.
+
+Note that a [`list()`](/language/standard/scripting#list) action result is not an array — it is immutable and does not support `+=`. Use an `array` variable when you need to build a collection dynamically.
+
+### Variable
+
+A variable is a type of value that can be accepted for a custom action or defined action argument. For functions, this means not coercing the value to any type. For defined actions, it means the value should always be handled as a variable when compiling the value for actions that have a parameter that does not accept only a variable value.
+
+### Action Result
+
+Actions have output types. View the [actions](/language/actions) documentation to check the output type of an action, or use the `--action=` argument in the CLI.
+
+```ruby
+#include 'actions/calendar'
+#include 'actions/location'
+
+@urls = url("https://apple.com","https://google.com")
+@list = list("Item 1","Item 2","Item 3")
+@email = emailAddress("test@test.org")
+@phone = phoneNumber("(555) 555-5555")
+@date = date("October 5, 2022")
+@location = getCurrentLocation()
+```
+
+### Quantity
+
+A quantity pairs a numeric value with a unit string. Actions that take duration, size, or similar measured arguments use this type.
+
+```
+qty(number value, text unit)
+```
+
+```ruby
+#include 'actions/calendar'
+
+adjustDate("October 5, 2022", "Add", qty(3, "hr"))
+```
+
+The unit string must match what the action expects. See each action's parameter definition for accepted units.
+
+Quantity values support comparison operators in conditionals:
+
+```ruby
+@elapsed: date
+if @elapsed > qty(30, "sec") {
+    /* ... */
+}
+```
+
+### Enumerations
+
+Some actions have arguments with the type `enum`, accompanied by a set of allowed values. This type only accepts specific string values.
+
+Enumerations are types with values defined in code, allowing them to have identifiers and be easily defined in code for both standard and user-defined actions.
+
+To define enumerations for use as a type for [functions](/language/functions) and [action definitions](/language/action-definitions), use the following syntax:
+
+```
+enum Color {
+    'Red',
+    'Green',
+    'Blue'
+}
+
+action 'com.example.app.action' myCustomAction(Color color)
+
+myCustomAction("Purple") // throws an error
+```
+
+It accepts raw string comma-separated values.
+
+Various formats are accepted:
+
+```
+enum Colors
+{
+    'Red',
+    'Green',
+    'Blue'
+}
+
+enum Colors {
+    'Red', 'Green', 'Blue'
+}
+
+enum Colors {'Red','Green','Blue'}
+```
+
+### Quantity Enumeration
+
+You can optionally prefix an enum type usage with a `#` operator to make the value a quantity field value if an action requires it for an argument. The enum will be used as the units for the quantity field value.
+
+```
+enum Durations {
+    'sec',
+    'min',
+    'hr'
+}
+
+action 'com.example.app.action' myCustomAction(#durations: 'WFDuration' = qty(0, "sec"))
+```
+
+### Color
+
+Some actions use a color type for a value. 
+
+```
+color foreground = color(1.0, 0.0, 0.0, 1.0)
+```
+
+Arguments defined as:
+
+```
+color(float red = 0.0, float green 0.0, float blue = 0.0, float alpha = 1.0)
+```
+
+### Empty
+
+You can declare a variable with no value
+
+```ruby
+@empty
+```
+
+Or more explicitly, set the value as `nil`
+
+```ruby
+@empty = nil
+```
+
+You can use `nil` just about anywhere to cancel out an optional value.
+
+However, if, due to the value being optional, it has a default, it will be set to its default, not empty.
+
+```ruby
+#include 'actions/documents'
+
+@var = getFile(nil)
+
+if var == nil {
+
+}
+
+repeat i for nil {
+
+}
+
+for item in nil {
+
+}
+```
+
+`nil` can skip an argument that is optional to set an argument after it.
+
+```
+@media = nil
+setMetadata(media, nil, "Title")
+```
+
+`nil` is also faster to compile than empty text `""`, array, etc.
+
+## Type Declaration
+
+You can declare a variable with a type but no initial value.
+
+This is particularly useful for creating a variable and then appending to it, then using it with an action that expects that type of value.
+
+Setting a variable's value type explicitly also compiles faster than having to infer the types from empty values like `""`, `[]`, or `{}`.
+
+```ruby
+@t: text
+@num: number
+@list: array
+@obj: dictionary
+@boolean: bool
+@reference: variable
+@real: float
+
+@builder: text
+for item in @list {
+    @builder += "{@item}"
+}
+
+/* This would have thrown an error if `@builder` was not of type text. */
+show(@builder)
+```
+
+The following types may be used:
+
+- `text` (default: `""`)
+- `number` (default: `0`)
+- `bool` (default: `false`)
+- `dictionary` (default: `{}`)
+- `array` (default: `[]`)
+- `var` (variable reference)
+- `float`
+
+## Type Coercion
+
+You can do the following type coercions. See [value types](#value-types) and [content item types](#content-item-types) for available value types you can coerce to.
+
+### Text
+
+```ruby
+@var = 5
+@textVar = @var.text
+```
+
+To coerce another value to text, simply reference it as an inline variable just as you would in Shortcuts.
+
+```ruby
+@var = 5
+@textVar = "{@var}"
+```
+
+Or you can use...
+
+```ruby
+#include 'actions/text'
+
+@var = 5
+@textVar = getText(@var)
+```
+
+Or if you need to set the text value explicitly to a variable:
+
+```ruby
+@n = 5
+const var = number(@n)
+@textVar = text("{var}")
+```
+
+### Number
+
+```ruby
+@var = "5"
+@textVar = @var.number
+@inlineVar = "{@var.number}"
+```
+
+```ruby
+@textVar = "5"
+@numVar = getNumbers(@textVar)
+```
+
+The `number()` action should only coerce another value to a number, as an integer produces the same output.
+
+```ruby
+@textVar = "5"
+@numVar = number(@textVar)
+```
+
+### Dictionary
+
+```ruby
+@var
+@textVar = getDictionary(@var)
+```
+
+### Content Item Types
+
+Any type from the [Content Item Types](#content-item-types) table can be used as a coercion suffix, not just `text` and `number`.
+
+```ruby
+@var
+@contact = @var.contact
+@dated = @var.date
+@linked = @var.url
+@img = @var.image
+@doc = @var.file
+```
+
+This also composes with dictionary key access:
+
+```ruby
+@getAs = @dictionary['Name'].contact
+```
+
+## Content Item Types
+
+There is a concept of data types in Shortcuts known as a "content item".
+
+These are defined in Shortcuts, for example, `WFAppStoreAppContentItem`.
+
+In Cherri, they are shortened into singular names.
+
+These types can be used for coercion, input, and output types.
+
+| Type 	| Content Item Type 	|
+|:-------------|:------------------|
+| app 	| WFAppStoreAppContentItem 	|
+| article 	| WFArticleContentItem 	|
+| contact 	| WFContactContentItem 	|
+| date 	| WFDateContentItem 	|
+| email 	| WFEmailAddressContentItem 	|
+| folder 	| WFFolderContentItem 	|
+| file 	| WFGenericFileContentItem 	|
+| image 	| WFImageContentItem 	|
+| itunes 	| WFiTunesProductContentItem 	|
+| location 	| WFLocationContentItem 	|
+| maplink 	| WFDCMapsLinkContentItem 	|
+| media 	| WFAVAssetContentItem 	|
+| pdf 	| WFPDFContentItem 	|
+| phonenumber 	| WFPhoneNumberContentItem 	|
+| richtext 	| WFRichTextContentItem 	|
+| webpage 	| WFSafariWebPageContentItem 	|
+| text 	| WFStringContentItem 	|
