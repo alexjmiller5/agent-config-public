@@ -107,6 +107,9 @@ or build with `lib.fakeSha256` and copy the real one from the mismatch error.
       second assignment overwrites (or use `lib.mkAfter`)
 - [ ] No package declared in both system and home-manager
 - [ ] No absolute paths - reference `pkgs.foo` or `${pkgs.foo}/bin/foo`
+- [ ] Platform checks use `stdenv.hostPlatform.isDarwin` / `.isLinux` -
+      bare `stdenv.isDarwin` is deprecated and emits an evaluation warning
+      on every build
 - [ ] Flake-input packages referenced as `inputs.x.packages.${pkgs.system}.default`
 
 ## Troubleshooting
