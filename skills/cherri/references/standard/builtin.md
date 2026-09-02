@@ -1,0 +1,47 @@
+# Built-in Actions
+
+Built-ins in Cherri are actions in the compiler that use standard actions but implement them in a way that makes it easier to use a specific Shortcuts feature.
+
+For example, the [makeVCard()](/language/vcards) action is, in actuality, just a text action, but the compiler uses it to insert the vCard format into a text action based on your input.
+
+## Contains Text
+
+Checks if `text` occurs in `subject`.
+
+```
+containsText(text subject, text text, bool ?caseSensitive = true)
+```
+
+This uses a [Match Text](/language/standard/documents#match-text) action to check if `text` is within `subject`.
+
+---
+
+## Base64 Encode File
+
+```
+embedFile(text filePath)
+```
+
+This built-in action loads the file at `filePath` and encodes it to base 64 at compile time. This will result in a **Text** action containing the base64-encoded contents of the file, which Shortcuts can decode to display an image, play audio, etc.
+
+For example, you could enter a file path for an audio file and use **Play Audio** to play the audio when the Shortcut runs.
+
+Keep in mind you will likely need to decode the contents to use them.
+
+```
+const audioFile = embedFile("music/playme.mp3")
+const audio = base64Decode(audioFile)
+playSound(audio)
+```
+
+---
+
+## [Make vCard](/language/vcards)
+
+Create vCards without having to remember the format. Embed local images as an image for a menu item.
+
+---
+
+## [Raw Action](/language/raw-actions)
+
+Create actions by inputting full identifiers and parameters to use actions not supported by Cherri.

@@ -1,0 +1,4 @@
+{
+  "name": "mcp",
+  "description": "Claude-side loader for the declared MCP servers in skills/mcp/.mcp.json"
+}
