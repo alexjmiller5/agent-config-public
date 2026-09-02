@@ -1,6 +1,6 @@
 ---
 name: discounts
-description: Use when the user is about to buy something and wants it cheaper - "find a discount", "promo code for X", "any deals on this", "can I get this cheaper", "student discount", "price check" - or when they links/names an item they found and wants the best legitimate price before purchasing. Also for TICKETS - concerts, shows, sports, festivals, club nights - comparing SeatGeek/TickPick/StubHub/RA/Posh/CrowdVolt/Ticketmaster and finding presale or promoter codes.
+description: Use when the user is about to buy something and wants it cheaper - "find a discount", "promo code for X", "any deals on this", "can I get this cheaper", "student discount", "price check" - or when they link/name an item they found and want the best legitimate price before purchasing. Also for TICKETS - concerts, shows, sports, festivals, club nights - comparing SeatGeek/TickPick/StubHub/RA/Posh/CrowdVolt/Ticketmaster and finding presale or promoter codes.
 ---
 
 # Discounts
