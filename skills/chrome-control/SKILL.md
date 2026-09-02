@@ -163,7 +163,24 @@ both in nixpkgs, needs a CA install.
 
 ---
 
-## Gotchas
+## Screenshots (shell - do NOT default to the MCP for these)
+
+Headless Chrome's `--screenshot` flag renders any URL that needs no login
+(localhost dev servers, public pages) straight to a PNG - no prompts, no MCP:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless --screenshot=/path/out.png --window-size=1400,1000 \
+  --hide-scrollbars --virtual-time-budget=6000 \
+  --user-data-dir="$(mktemp -d)" http://localhost:5173/
+```
+
+The PNG is written even when the process then fails to exit (observed Chrome
+139) - background it or wrap in a short timeout, then `pkill -f` the temp
+profile path. `--virtual-time-budget` gives client-side JS (charts, fetches)
+time to settle before capture. Pages behind a login are the one case where
+screenshots legitimately fall back to the claude-in-chrome MCP (or CDP
+`Page.captureScreenshot` on Tier 2).
 
 0. **`chrome-cli execute` quirks** (chrome-cli 1.9 / Chrome 139, observed
    2026-08-25): (a) a non-string result crashes it
