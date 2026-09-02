@@ -95,13 +95,20 @@ photo in Photos first) or `osxphotos query --limit`-style small queries.
   a TCC Automation grant for Photos on the invoking terminal.
 - **Big imports wedge Photos - import per-file, never one giant batch.**
   A single AppleScript `import` of ~25GB/33 videos hung Photos' UI thread
-  outright (menus dead, AppleEvents time out -1712; data staged but never
-  registered; force-quit is safe - nothing partial lands). photoscript
-  surfaces the hang as `AppleScriptError: ... User canceled. (-128)`,
-  which looks like a TCC denial but is NOT one - check
-  `pgrep -x Photos` + whether its menus open before blaming permissions.
-  Reliable pattern: loop one `import {file}` AppleScript call per file
-  (own timeout each); 33 files imported flawlessly that way.
+  outright. photoscript surfaces the hang as
+  `AppleScriptError: ... User canceled. (-128)`, which looks like a TCC
+  denial but usually is NOT one - diagnose before blaming permissions.
+- **On -128 / -1712: diagnose the hang, then force-quit Photos.**
+  Hang tells: process alive (`pgrep -x Photos`) but ~0% CPU, menus won't
+  open, clicking the dock icon does nothing, every AppleEvent times out
+  (-1712). That state never self-recovers - `killall Photos`, relaunch
+  (`open -a Photos`), and only then re-check permissions if writes still
+  fail. Force-quit is safe: a wedged bulk import stages file copies but
+  registers nothing, so no partial media items land (the orphaned staging
+  is cleaned up by Photos itself). After relaunch, VERIFY what actually
+  imported (query the album/`--added-in-last`) rather than assuming, then
+  resume with one `import {file}` AppleScript call per file (own timeout
+  each) - 33 files imported flawlessly that way after the batch hang.
 - `batch-edit` operates on the current Photos selection unless you pass
   query options. `--undo` reverts the last batch-edit (not album adds).
 - Always `--dry-run` first on any write against many photos.
