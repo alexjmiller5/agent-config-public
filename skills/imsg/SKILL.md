@@ -1,6 +1,6 @@
 ---
 name: imsg
-description: Use when a task touches iMessages or SMS on the user's Macs - reading or searching message history, listing chats, checking unread messages, watching for incoming messages, sending a text or attachment to someone, or anything mentioning imsg, Messages.app, chat.db, or "text <person>". Load BEFORE running any imsg command or reading the Messages database.
+description: Use when a task touches iMessages, SMS, texts, or texting on the user's Macs IN ANY WAY - reading, searching, or digging through message/text history for information or evidence, answering "what did X say" / "when did we talk about Y", listing chats, checking unread messages, watching for incoming messages, sending a text or attachment to someone, or anything mentioning imsg, Messages.app, chat.db, "my texts", "my messages", or "text <person>". Load BEFORE running any imsg command, reading the Messages database, or querying chat.db with sqlite - raw SQL misses most modern message text.
 ---
 
 # imsg - iMessage/SMS from the shell
