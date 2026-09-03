@@ -87,6 +87,37 @@ Anything else: `{photo.PROPERTY}` reaches the full PhotoInfo object.
 Test templates live with `uvx osxphotos inspect -T "{template}"` (select a
 photo in Photos first) or `osxphotos query --limit`-style small queries.
 
+- **A multi-value field in `--print` fans out to one line per VALUE** (a
+  20-label photo prints 20 lines). Join instead with `{DELIM+FIELD}`, e.g.
+  `{,+label}` → one line per photo, labels comma-joined. `{photo.labels}`
+  (list attribute) fans out the same way - always use the join form.
+
+## Tip: one-line-per-photo digest of a date range
+
+`--print "{uuid}|{created.strftime,%a %m-%d %H:%M}|{place.name}|{,+label}"`
+over a `--from-date`/`--to-date` window gives a compact digest of a whole
+period in one invocation: GPS place names, timestamps, and ML labels for
+indoor scenes (English Breakfast, Nightclub, Stadium…), with exported
+previews of key photos (see below) for reading signage/menus/tickets
+visually. Caveats when interpreting:
+
+- **Not every library photo was taken by the user.** Photos saved from
+  shares/AirDrop carry the SENDER's GPS and time - a fix that's physically
+  impossible given adjacent photos means someone else took it.
+- **Duplicate timestamps ± whole hours** are shared/saved copies rendered
+  in the original device's timezone; trust the copies consistent with the
+  GPS-tagged sequence. Screenshots have no GPS but device-local time.
+
+## Exporting when originals are in iCloud (optimized storage)
+
+On an optimize-storage Mac most originals aren't local: `export` reports
+them `missing` and exports 0 files. `--download-missing` is slow;
+`--preview-if-missing` exports Photos' local preview instead - instant and
+plenty for visual identification (reading signs, menus, tickets). It asks
+an interactive y/N - pipe `echo y |`. Files land as `*_preview.jpeg` (or
+`.heic` without `--convert-to-jpeg`). Export selected photos by repeating
+`--uuid`, with `--filename "{uuid}"` for predictable names.
+
 ## Writes: what to know
 
 - Write paths (`batch-edit`, `--add-to-album`, `import`, `timewarp`) go
