@@ -23,7 +23,8 @@ The `mcp__claude-in-chrome__*` extension tools are slower than the shell tiers
 and their JS runs in an isolated world - see gotcha 0(c). Only fall back to
 them when a shell tier genuinely cannot do the job (e.g. native
 mouse-coordinate clicks on a canvas where DOM events won't do, or
-screenshots), and return to the shell tiers immediately after.
+screenshots), and return to the shell tiers immediately after. Any tab the
+MCP opens is closed by you, not the user - see "Close what you open".
 
 ---
 
@@ -291,6 +292,25 @@ and verify the fix. Then edit surgically: correct the specific claim, record
 the Chrome / tool version you observed it on, add to Gotchas only if it will
 bite again, and state **current behaviour only** - no changelogs, no dated
 notes. Tell the user what changed, in chat. Same bar applies to `web-recon`.
+
+## Close what you open (MANDATORY)
+
+Every tab or window you create is yours to close - the user otherwise inherits
+a browser full of leftovers from every agent session. Before ending the task
+(and before answering any "done" message), close everything you opened:
+
+- `chrome-cli open` prints `Id: <tab>` / `Window id: <win>` - keep them and
+  run `chrome-cli close -t <id>` (or `close -w <win>` for an `open -n` window)
+  when finished with it. A tab you navigated but did not create stays open.
+- MCP `tabs_create_mcp` → `tabs_close_mcp` on that same tab id.
+- Tier 3/4 throwaway Chromes → kill the process (gotcha 5), which takes its
+  windows with it.
+- CDP scripts (`cdp-act.mjs` / `cdp-sniff.mjs`) → `{"quit":true}` / let the
+  capture window end, then close any tab you opened for them.
+
+Track ids as you go; do not rely on `chrome-cli list tabs` at the end to guess
+which were yours. Leaving a tab open is only acceptable when the user asked to
+see it, and then say so in chat.
 
 ## Human handoff
 
