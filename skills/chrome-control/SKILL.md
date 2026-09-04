@@ -14,7 +14,7 @@ clicks; Tier 2 costs the user a click; Tier 3 costs them their logged-in session
 | HTML of an open tab, tab list, run some JS | **1 - `chrome-cli`** |
 | Network traffic, response bodies, console, cookies | **2 - CDP on the real profile** |
 | Unattended/scripted browsing, no human present | **3 - throwaway profile** |
-| Heavy or long-running automation (several browsers, hours of scraping) | **4 - remote Chrome on another machine** |
+| Anything beyond one tab at a time (multiple sites, several profiles, long scrapes) | **4 - remote Chrome on another machine** |
 
 ## The claude-in-chrome MCP is a LAST RESORT
 
@@ -192,9 +192,10 @@ both in nixpkgs, needs a CA install.
 ## Tier 4 - remote Chrome on another machine
 
 Browsers are the heavy part of any automation; the agent session is a
-terminal. When a task needs several dedicated Chromes or runs for hours,
-run the browsers on a second machine (a home server, a spare Mac) and keep
-the session where the user is. The session drives each remote Chrome over
+terminal. **The threshold is one tab: anything that needs more than a
+single tab at a time** - two sites, a profile per site, a scrape that
+outlives the conversation - runs its browsers on a second machine (a home
+server, a spare Mac) with the session staying where the user is. The session drives each remote Chrome over
 CDP through an ssh port-forward, so only websocket traffic crosses the
 wire and the user's own machine stays responsive.
 
