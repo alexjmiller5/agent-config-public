@@ -14,6 +14,7 @@ clicks; Tier 2 costs the user a click; Tier 3 costs them their logged-in session
 | HTML of an open tab, tab list, run some JS | **1 - `chrome-cli`** |
 | Network traffic, response bodies, console, cookies | **2 - CDP on the real profile** |
 | Unattended/scripted browsing, no human present | **3 - throwaway profile** |
+| Heavy or long-running automation (several browsers, hours of scraping) | **4 - remote Chrome on another machine** |
 
 ## The claude-in-chrome MCP is a LAST RESORT
 
@@ -99,6 +100,31 @@ per command, so hold the connection open across a session.
 While attached, Chrome shows a persistent *"Chrome is being controlled by
 automated test software"* infobar. That's expected, not a problem.
 
+### Trusted input + capture - `scripts/cdp-act.mjs`
+
+The actor. Same one-click approval, but drives the page with **trusted**
+input (`Input.dispatchMouseEvent` / `dispatchKeyEvent`), which is the only
+way to click things that ignore synthetic events (Google Maps list links,
+icon pickers). Steps are JSON, one per line.
+
+```bash
+# one-shot
+node ~/.claude/skills/chrome-control/scripts/cdp-act.mjs --url <tab-substr> < steps.json
+# persistent: ONE Allow click, then append steps to the file as you go
+node ~/.claude/skills/chrome-control/scripts/cdp-act.mjs --url <substr> --follow steps.ndjson &
+echo '{"click":"document.querySelector(\"h1\")"}' >> steps.ndjson
+```
+
+Steps: `{"eval":"<expr>"}` `{"click":"<expr returning Element>"}`
+`{"type":"text"}` (insertText) `{"keys":"text"}` (per-character key events)
+`{"key":"Enter|Escape|Tab"}` `{"sleep":ms}` `{"shot":"/path.png"}`
+`{"capture":"<url substr>"}` (prints matching request/response bodies)
+`{"quit":true}`. Output is NDJSON on stdout.
+
+**Trusted input is not magic**: it clicks where you point, but an app that
+opens an editor only from its own internal state still won't cooperate
+(see the note-editing failure documented in `places-sync`).
+
 ### Capturing traffic - `scripts/cdp-sniff.mjs`
 
 The passive sniffer. Attaches to open tabs and streams XHR/fetch as NDJSON
@@ -162,6 +188,49 @@ CDP fingerprinted? `mitmdump --set hardump=capture.har` +
 both in nixpkgs, needs a CA install.
 
 ---
+
+## Tier 4 - remote Chrome on another machine
+
+Browsers are the heavy part of any automation; the agent session is a
+terminal. When a task needs several dedicated Chromes or runs for hours,
+run the browsers on a second machine (a home server, a spare Mac) and keep
+the session where the user is. The session drives each remote Chrome over
+CDP through an ssh port-forward, so only websocket traffic crosses the
+wire and the user's own machine stays responsive.
+
+```bash
+# on the remote host: a dedicated profile per site, its own debug port
+ssh <host> '"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9400 --user-data-dir=$HOME/.local/share/<tool>/sessions/<site> \
+  --no-first-run >/dev/null 2>&1 &'
+# locally: forward the port, then drive 127.0.0.1:9400 exactly like Tier 3
+ssh -N -L 9400:127.0.0.1:9400 <host> &
+```
+
+Rules that make this work:
+
+- **Profiles live on the remote host permanently.** Device trust, "remember
+  this browser", and cookies accumulate there; never copy them back and
+  forth. One profile per site, one port per site, so runs can overlap.
+- **Secrets travel over stdin, never the command line.** `printf '%s' "$T" |
+  ssh <host> 'read -r T; TOKEN="$T" <script>'` keeps the value out of both
+  machines' process lists and out of the transcript. A remote ssh session
+  cannot read the host's Keychain (per-session locked), so pipe what it
+  needs.
+- **The remote host needs a console session** (a user logged in at the
+  screen) for Chrome to get a window; check `stat -f %Su /dev/console`.
+- **Anything that reads local state runs where the state is**: SMS codes
+  from Messages, files, a local database. Either the remote host has that
+  state (synced Messages) or the script fetches it over ssh.
+- **Human handoff = Screen Sharing.** When a site needs the person (an
+  SMS-only login, a CAPTCHA, "confirm on your phone"), they open the remote
+  machine's screen (macOS Screen Sharing over the tailnet, one click), do
+  the step in that Chrome, and close it. Before asking, screenshot the
+  page over the forwarded CDP (`Page.captureScreenshot`) and show it in
+  chat - often that alone resolves it.
+- **Chrome 136+ still ignores `--remote-debugging-port` on the default
+  profile** (gotcha 1); a dedicated `--user-data-dir` is what makes the
+  port listen, remote or not.
 
 ## Screenshots (shell - do NOT default to the MCP for these)
 
