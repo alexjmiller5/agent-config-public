@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# wa-db - query the WhatsApp desktop app's local message store (macOS) safely.
+#
+# Snapshots ChatStorage.sqlite (+ its WAL/SHM, so recent messages are included)
+# to a temp dir, defines friendly views on the copy, runs your SQL, and cleans
+# up. The live database is never opened, so the app cannot be corrupted.
+#
+#   wa-db "<sql>"              JSON rows (sqlite3 -json)
+#   wa-db -table "<sql>"       any sqlite3 output flag works
+#   wa-db                      interactive shell on the snapshot
+#
+# Views (see the skill for columns): chats, messages, members
+set -euo pipefail
+
+SRC="${WA_DB_DIR:-$HOME/Library/Group Containers/group.net.whatsapp.WhatsApp.shared}"
+[ -r "$SRC/ChatStorage.sqlite" ] || { echo "wa-db: no readable ChatStorage.sqlite in $SRC (WhatsApp desktop not installed/logged in, or this shell lacks access)" >&2; exit 1; }
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+for f in ChatStorage.sqlite ChatStorage.sqlite-wal ChatStorage.sqlite-shm; do
+  [ -f "$SRC/$f" ] && cp "$SRC/$f" "$tmp/$f"
+done
+
+views='
+CREATE TEMP VIEW chats AS
+SELECT s.Z_PK AS chat_pk,
+       s.ZCONTACTJID AS jid,
+       CASE WHEN s.ZCONTACTJID LIKE "%@lid" THEN s.ZCONTACTIDENTIFIER ELSE s.ZCONTACTJID END AS phone_jid,
+       s.ZPARTNERNAME AS name,
+       CASE s.ZSESSIONTYPE WHEN 0 THEN "dm" WHEN 1 THEN "group" WHEN 2 THEN "broadcast" WHEN 3 THEN "status" WHEN 4 THEN "community" ELSE "type-"||s.ZSESSIONTYPE END AS kind,
+       s.ZUNREADCOUNT AS unread,
+       s.ZARCHIVED AS archived,
+       datetime(s.ZLASTMESSAGEDATE + 978307200, "unixepoch", "localtime") AS last_ts,
+       s.ZLASTMESSAGETEXT AS last_text
+FROM ZWACHATSESSION s
+WHERE s.ZREMOVED = 0 OR s.ZREMOVED IS NULL;
+
+CREATE TEMP VIEW messages AS
+SELECT m.Z_PK AS msg_pk,
+       m.ZCHATSESSION AS chat_pk,
+       s.ZPARTNERNAME AS chat,
+       s.ZCONTACTJID AS chat_jid,
+       m.ZISFROMME AS from_me,
+       CASE WHEN m.ZISFROMME = 1 THEN "me" ELSE COALESCE(gm.ZCONTACTNAME, m.ZPUSHNAME, s.ZPARTNERNAME) END AS sender,
+       m.ZFROMJID AS sender_jid,
+       datetime(m.ZMESSAGEDATE + 978307200, "unixepoch", "localtime") AS ts,
+       m.ZMESSAGETYPE AS type,
+       CASE m.ZMESSAGETYPE WHEN 0 THEN "text" WHEN 1 THEN "image" WHEN 2 THEN "video" WHEN 3 THEN "audio"
+            WHEN 5 THEN "contact" WHEN 6 THEN "system" WHEN 7 THEN "link" WHEN 8 THEN "document"
+            WHEN 11 THEN "gif" WHEN 14 THEN "deleted" WHEN 15 THEN "sticker" ELSE "type-"||m.ZMESSAGETYPE END AS kind,
+       m.ZTEXT AS text,
+       mi.ZTITLE AS media_title,
+       mi.ZMEDIALOCALPATH AS media_path,
+       m.ZSTARRED AS starred,
+       m.ZMESSAGESTATUS AS status
+FROM ZWAMESSAGE m
+JOIN ZWACHATSESSION s ON s.Z_PK = m.ZCHATSESSION
+LEFT JOIN ZWAGROUPMEMBER gm ON gm.Z_PK = m.ZGROUPMEMBER
+LEFT JOIN ZWAMEDIAITEM mi ON mi.Z_PK = m.ZMEDIAITEM;
+
+CREATE TEMP VIEW members AS
+SELECT gm.ZCHATSESSION AS chat_pk, s.ZPARTNERNAME AS chat, gm.ZMEMBERJID AS jid,
+       gm.ZCONTACTNAME AS name, gm.ZISADMIN AS admin, gm.ZISACTIVE AS active
+FROM ZWAGROUPMEMBER gm JOIN ZWACHATSESSION s ON s.Z_PK = gm.ZCHATSESSION;
+'
+
+if [ $# -eq 0 ]; then
+  exec sqlite3 -cmd "$views" "$tmp/ChatStorage.sqlite"
+fi
+sql="${@: -1}"
+flags=("${@:1:$#-1}")
+[ ${#flags[@]} -eq 0 ] && flags=(-json)
+exec sqlite3 "${flags[@]}" -cmd "$views" "$tmp/ChatStorage.sqlite" "$sql"
