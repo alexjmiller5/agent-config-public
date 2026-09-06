@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# wa-send - send a WhatsApp text through the logged-in WhatsApp desktop app (macOS).
+#
+#   wa-send --to <phone> --text "<message>" [--dry-run]
+#
+# Opens the chat with the official app's whatsapp://send deep link (which
+# prefills and focuses the composer), verifies via Accessibility that the
+# focused composer holds exactly the requested text, presses Return, then
+# confirms the row landed in the local message store. --dry-run stops after the composer check and clears it.
+#
+# Needs: WhatsApp.app logged in; Accessibility permission for the app running
+# this script (Terminal/IDE/agent host). 1:1 chats only - see the skill for
+# groups. The app is briefly brought to the front; focus is restored after.
+set -euo pipefail
+
+to=""; text=""; dry=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --to) to="$2"; shift 2 ;;
+    --text) text="$2"; shift 2 ;;
+    --dry-run) dry=1; shift ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    *) echo "wa-send: unknown arg $1" >&2; exit 2 ;;
+  esac
+done
+[ -n "$to" ] && [ -n "$text" ] || { echo "wa-send: --to and --text are required" >&2; exit 2; }
+
+digits=$(printf '%s' "$to" | tr -cd '0-9')
+[ ${#digits} -ge 7 ] || { echo "wa-send: --to must be a full international number (E.164), got '$to'" >&2; exit 2; }
+enc=$(jq -rn --arg t "$text" '$t|@uri')
+
+result=$(osascript - "whatsapp://send?phone=$digits&text=$enc" "$text" "$dry" <<'APPLESCRIPT'
+on run argv
+  set theURL to item 1 of argv
+  set wantText to item 2 of argv
+  set dry to (item 3 of argv is "1")
+  set prev to path to frontmost application
+  do shell script "open " & quoted form of theURL
+  set v to ""
+  set ok to false
+  tell application "System Events" to tell process "WhatsApp"
+    -- the deep link focuses the composer; poll the focused element only (one
+    -- Apple event each, no tree walks - the Catalyst AX tree is slow/flaky)
+    repeat 40 times
+      delay 0.5
+      try
+        set f to value of attribute "AXFocusedUIElement"
+        if role of f is "AXTextArea" and frontmost then
+          set v to value of f
+          if v is missing value then set v to ""
+          if (v as text) is wantText then
+            set ok to true
+            exit repeat
+          end if
+        end if
+      end try
+    end repeat
+    if not ok then
+      tell application (prev as text) to activate
+      if v is "" then return "ERROR: WhatsApp composer never took focus with the text (app not logged in, Accessibility not granted, or the number is not on WhatsApp)"
+      return "ERROR: composer holds [" & v & "] not the requested text - not sent (a stale draft in that chat? clear it in the app)"
+    end if
+    if dry then
+      set value of f to ""
+      tell application (prev as text) to activate
+      return "DRY-RUN: composer verified, cleared, nothing sent"
+    end if
+    keystroke return
+    repeat 20 times
+      delay 0.25
+      set v to ""
+      try
+        set v to value of f
+        if v is missing value then set v to ""
+      end try
+      if (v as text) is "" then exit repeat
+    end repeat
+  end tell
+  tell application (prev as text) to activate
+  if (v as text) is "" then return "SENT"
+  return "ERROR: Return pressed but composer still holds text - not confirmed"
+end run
+APPLESCRIPT
+)
+
+case "$result" in
+  SENT) ;;
+  DRY-RUN*) echo "$result"; exit 0 ;;
+  *) echo "wa-send: $result" >&2; exit 1 ;;
+esac
+
+# Confirm in the local store (the app writes the row within a second or two).
+here=$(cd "$(dirname "$0")" && pwd)
+for _ in 1 2 3 4 5 6; do
+  row=$("$here/wa-db" "select msg_pk, chat, chat_jid, ts, status from messages where from_me=1 and text=$(printf '%s' "$text" | sed "s/'/''/g; s/^/'/; s/$/'/") and ts >= datetime('now','localtime','-2 minutes') order by msg_pk desc limit 1")
+  [ "$row" != "" ] && { echo "$row" | jq -c '.[0] + {sent:true}'; exit 0; }
+  sleep 1
+done
+echo "wa-send: Send clicked but the message is not in the local store yet - check the app" >&2
+exit 1
