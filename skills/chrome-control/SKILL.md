@@ -15,6 +15,7 @@ clicks; Tier 2 costs the user a click; Tier 3 costs them their logged-in session
 | Network traffic, response bodies, console, cookies | **2 - CDP on the real profile** |
 | Unattended/scripted browsing, no human present | **3 - throwaway profile** |
 | Anything beyond one tab at a time (multiple sites, several profiles, long scrapes) | **4 - remote Chrome on another machine** |
+| The user may close or walk away from their laptop before the job ends | **4 - and the DRIVER runs on the remote host too** |
 
 ## The claude-in-chrome MCP is a LAST RESORT
 
@@ -233,6 +234,16 @@ Rules that make this work:
 - **Chrome 136+ still ignores `--remote-debugging-port` on the default
   profile** (gotcha 1); a dedicated `--user-data-dir` is what makes the
   port listen, remote or not.
+- **If the user might close or leave the laptop, the driver moves too.**
+  An ssh port-forward dies with the laptop's session, so a job that must
+  survive the user stepping away runs its driver ON the remote host,
+  talking to `127.0.0.1:<port>` there, launched detached (`nohup … &`;
+  macOS has no `setsid`), with its log on that host. The session then only
+  checks in over ssh (`tail` the log, `pgrep` the driver). Do this BEFORE
+  the user leaves; keep any local run going until the remote one is
+  confirmed writing, then stop the local one. Google-account sites need a
+  one-time sign-in in that remote profile (Screen Sharing), after which it
+  persists for every later run.
 
 ## Screenshots (shell - do NOT default to the MCP for these)
 
