@@ -97,9 +97,11 @@ and no token. The sheet is titled `Allow remote debugging?` and its Allow
 button is an `AXButton` whose *description* (not name) is `Allow`, nested in
 groups.
 
-`scripts/cdp-allow [secs]` answers it for you: it polls for that sheet via
-macOS UI scripting (System Events) for up to `secs` (default 20) and clicks
-Allow, exit 0 on success. `cdp-act.mjs` and `cdp-sniff.mjs` spawn it
+`scripts/cdp-allow [secs] [grace]` answers it for you: it polls for that sheet
+via macOS UI scripting (System Events) for up to `secs` (default 20), clicks
+Allow on every matching sheet it sees (Chrome queues one sheet per pending
+connection, so a stale one from an earlier attach must not steal the click),
+keeps watching `grace` more seconds (default 5) after a click, then exits 0. `cdp-act.mjs` and `cdp-sniff.mjs` spawn it
 automatically right after opening their WebSocket, so a Tier 2 attach needs
 no human. Any other CDP client does the same: open the socket, then run
 `cdp-allow` (or spawn it just before connecting). It only approves while it
