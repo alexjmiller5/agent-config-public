@@ -5,14 +5,22 @@ description: Use when a task touches WhatsApp in any way on the user's Mac - rea
 
 # WhatsApp - read and send from the shell (macOS)
 
-Two paths, both riding the **logged-in WhatsApp desktop app** - no linked
-device, no unofficial client, nothing for Meta to ban:
+Two tiers. **Tier 1 rides the logged-in WhatsApp desktop app** - no linked
+device, no unofficial client, nothing for Meta to ban - and covers every
+read plus 1:1 text sends:
 
 - **Read** = SQL over a snapshot of the app's local store
   (`~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite`,
   plain Core Data SQLite, full history the Mac has synced).
 - **Send** = the app's own `whatsapp://send` deep link (prefills the
-  composer) + an Accessibility click on its Send button, then a store check.
+  composer) + one Accessibility keypress, then a store check.
+
+**Tier 2 is `wacli`** (openclaw/wacli, whatsmeow) - a separate *linked
+device* on the account, for what tier 1 cannot do: group sends, media,
+replies/reactions, and headless use. It is an unofficial client, so it
+carries the account-ban exposure tier 1 avoids; use it only for those
+cases. Reads stay on tier 1 regardless - the desktop store is complete,
+wacli's is best-effort.
 
 Both live in [scripts/](scripts/): `wa-db` and `wa-send` (with the skill
 symlinked into `~/.claude/skills/`, that is `~/.claude/skills/whatsapp/scripts/`;
@@ -28,6 +36,10 @@ WhatsApp.app is installed and logged in (linked to the phone).
 - Sends: the app running the script (terminal, IDE, agent host) needs
   **Accessibility** (System Settings → Privacy & Security → Accessibility).
   Without it `wa-send` reports the composer/Send button as not found.
+- Tier 2: `brew install openclaw/tap/wacli` (declare it in machine config
+  where machines are declarative), then the user runs `wacli auth` once.
+  Store: `~/.wacli` (`session.db` = the linked-device keys - never touch;
+  `wacli.db` = its own message mirror).
 - `wa-send` brings WhatsApp to the front for ~2 s and restores the previous
   app. Don't run it while the user is typing.
 
@@ -111,13 +123,47 @@ confirm with the user first.
   app.
 - **Groups are not sendable by `wa-send`** (no deep link opens a group, and
   the app's Accessibility tree is not stable enough to navigate the chat
-  list). Say so; if the user needs agent-sent group messages, the fallback
-  is `wacli` (openclaw/wacli - pairs as a separate linked device via
-  WhatsApp Web protocol; carries the unofficial-client ban risk the
-  desktop-app path avoids).
-- No attachments, reactions, or replies-to - text only.
+  list) - that is tier 2's job, below.
+- No attachments, reactions, or replies-to - text only. Tier 2 for those.
+
+## Tier 2 - wacli (groups, media, headless; guard applies)
+
+Only when installed and paired (`wacli auth status --json` → authenticated;
+pairing is a one-time QR scan the user does from their own terminal:
+`wacli auth`). If it is not paired, say so - never pair on the user's
+behalf, that is the account-risk step.
+
+```bash
+wacli --json send text --to "<group or contact name|jid|+E164>" --message "text"
+wacli --json send text --to "<jid>" --message "reply" --reply-to <msg_id>
+wacli --json send file --to "<jid>" --file /abs/path.jpg --caption "..."
+wacli --json send react --to "<jid>" --id <msg_id> --reaction "👍"
+```
+
+- **Target by JID, not by name, in scripts** - a name matching several
+  chats prompts interactively (or needs `--pick N`). Get the JID from tier
+  1: `chats.jid` (`...@g.us` for groups, `...@s.whatsapp.net` for people).
+- `sent: true` means WhatsApp accepted the message, not that it was
+  delivered. Confirm the way tier 1 does: the row appears in `wa-db`'s
+  `messages` within a few seconds (the phone relays it to the desktop app).
+- Each `send` opens its own short session; no daemon is needed. Sends
+  within 5 s of each other trigger wacli's own rate warning - never loop.
+- Message IDs for `--reply-to` / `react` come from wacli's own store
+  (`wacli --read-only --json messages list --chat <jid> --limit 20`), which
+  only holds what it has synced (`wacli sync --once` refreshes it) - not
+  from `wa-db`'s `msg_pk`.
+- `send text` refuses the account's own number unless `--allow-self`, and a
+  self-send may be acknowledged without landing in "Message Yourself".
+- Everything else wacli can do (search its own store, groups admin,
+  channels, polls, history backfill) is documented in
+  [references/](references/) (upstream docs mirrored at v0.18.0); read the
+  relevant file before using a command not shown here.
 
 ## Gotchas
+
+- `wacli` reporting `not authenticated` / a QR code = the linked device was
+  never paired or the phone unlinked it (also happens when the phone has not
+  been online for 14 days). Stop and tell the user; only they can re-pair.
 
 - Reading the live `ChatStorage.sqlite` directly silently omits everything
   still in the WAL, and opening it read-write can corrupt the app's state.
