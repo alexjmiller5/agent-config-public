@@ -2,12 +2,15 @@
 # Auto-approve Chrome's "Allow remote debugging?" sheet (Tier 2, chrome://inspect
 # approval mode). Chrome raises that sheet on EVERY new CDP websocket connection;
 # this clicks Allow via macOS UI scripting so an agent's own connection needs no
-# human. Polls for the sheet for up to $1 seconds (default 20), exits 0 when
-# clicked, 1 if it never appeared. Needs Accessibility permission for the
+# human. Polls for up to $1 seconds (default 20) and clicks every matching
+# sheet it sees (Chrome queues one per pending connection, so a stale sheet from
+# an earlier attach must not steal the click); after the first click it keeps
+# watching for $2 more seconds (default 5) for a queued one, then exits 0.
+# Exits 1 if no sheet ever appeared. Needs Accessibility permission for the
 # calling process (System Settings > Privacy & Security > Accessibility).
 # Only ever approves while running - it is not a standing allowlist.
-secs="${1:-20}"
-deadline=$(( $(date +%s) + secs ))
+secs="${1:-20}"; grace="${2:-5}"
+deadline=$(( $(date +%s) + secs )); clicked=0
 while [ "$(date +%s)" -lt "$deadline" ]; do
   result=$(osascript <<'APPLESCRIPT' 2>/dev/null
 tell application "System Events"
@@ -34,9 +37,12 @@ end tell
 APPLESCRIPT
 )
   case "$result" in
-    clicked) echo "cdp-allow: approved" >&2; exit 0 ;;
+    clicked)
+      clicked=$((clicked + 1)); echo "cdp-allow: approved (#$clicked)" >&2
+      deadline=$(( $(date +%s) + grace )) ;;   # keep watching briefly for a queued sheet
     no-chrome) echo "cdp-allow: Chrome is not running" >&2; exit 1 ;;
   esac
   sleep 0.5
 done
+[ "$clicked" -gt 0 ] && exit 0
 echo "cdp-allow: no dialog within ${secs}s" >&2; exit 1
