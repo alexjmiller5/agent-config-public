@@ -13,7 +13,7 @@ const done = new Promise((res, rej) => {
   ws.onopen = () => ws.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: expr, returnByValue: true, awaitPromise: true } }));
   ws.onmessage = e => { const m = JSON.parse(e.data); if (m.id === 1) { ws.close(); m.error ? rej(new Error(JSON.stringify(m.error))) : res(m.result); } };
   ws.onerror = e => rej(new Error('ws error'));
-  setTimeout(() => rej(new Error('timeout')), 30000);
+  setTimeout(() => rej(new Error('timeout')), 30000).unref();
 });
-try { const r = await done; if (r.exceptionDetails) { console.error(r.exceptionDetails.text); process.exit(2); } const v = r.result.value; process.stdout.write(typeof v === 'string' ? v : JSON.stringify(v ?? '')); }
+try { const r = await done; if (r.exceptionDetails) { console.error(r.exceptionDetails.text); process.exit(2); } const v = r.result.value; process.stdout.write(typeof v === 'string' ? v : JSON.stringify(v ?? '')); process.exit(0); }
 catch (e) { console.error(String(e)); process.exit(1); }

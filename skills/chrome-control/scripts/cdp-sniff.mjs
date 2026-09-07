@@ -7,6 +7,9 @@
 // Requires: chrome://inspect/#remote-debugging ticked. Click "Allow" when prompted.
 
 import {readFileSync} from 'node:fs';
+import { spawn } from 'node:child_process';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {homedir} from 'node:os';
 import {join} from 'node:path';
 
@@ -59,6 +62,11 @@ try {
 }
 
 const ws = new WebSocket(`ws://127.0.0.1:${port}${wsPath}`);
+
+// Auto-approve Chrome's "Allow remote debugging?" sheet for THIS connection
+// (scripts/cdp-allow, macOS UI scripting; needs Accessibility). Best-effort:
+// if it fails the human can still click Allow within the timeout.
+spawn(`${dirname(fileURLToPath(import.meta.url))}/cdp-allow`, ['25'], { stdio: 'ignore', detached: true }).unref();
 let id = 0;
 const pending = new Map();
 // Send a CDP command; sessionId routes it to a page instead of the browser.
