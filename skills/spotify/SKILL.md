@@ -34,9 +34,11 @@ required.
   `credentials.json` exists.
 - **Never set `client_id`** - the built-in default is ncspot's
   extended-quota app; a personal one runs in restricted mode (429/403s).
-- **429 Too Many Requests on every command** = Spotify's short-window
-  quota, usually after several TUI launches in a row (each startup fires a
-  burst of requests). Wait it out; it is not an auth problem.
+- **429 Too Many Requests on every command** = Spotify throttling the
+  shared default app for this account (seen after several OAuth logins and
+  TUI launches in a row; lasted 30+ minutes with a steady Retry-After that
+  never shrank). Not an auth problem and not fixable client-side - stop
+  calling and retry later; each probe extends it.
 
 ## Script recipes (the parts agents guess wrong)
 
