@@ -91,7 +91,11 @@ Grant that binary, once, in System Settings → Privacy & Security:
   Allow on the "X wants to control System Events" dialog that appears on the
   machine's display the first time. Denied → `-1743`; `AppleEvent timed out
   (-1712)` from a fresh ssh shell means that dialog is up on the display
-  right now, unanswered.
+  right now, unanswered. A prompt that times out or whose caller is killed
+  is recorded as **Deny** and never shown again - flip it on afterwards in
+  Privacy & Security → **Automation** → the source binary → target app
+  (verify in the user TCC db: `kTCCServiceAppleEvents` rows, `auth_value` 2
+  = allowed, 0 = denied).
 
 Rules that bite:
 
