@@ -142,6 +142,25 @@ Steps: `{"eval":"<expr>"}` `{"click":"<expr returning Element>"}`
 opens an editor only from its own internal state still won't cooperate
 (see the note-editing failure documented in `places-sync`).
 
+### One-shot eval / trusted click / screenshot - `scripts/cdp-eval.mjs`
+
+For scripts that make many small calls (a Tier 3/4 driver): one process
+per call, exits immediately (~70 ms).
+
+```bash
+node cdp-eval.mjs <port> '<expr>' [--url <substr>]            # prints the value
+node cdp-eval.mjs <port> --click '<expr returning Element>'   # trusted click at its centre (brings page to front first)
+node cdp-eval.mjs <port> --shot /path.png                     # Page.captureScreenshot
+```
+
+Gotchas learned the hard way: a `setTimeout` safety timer must be
+`.unref()`ed or every call idles until it fires; `--click` takes an
+EXPRESSION - wrap statement blocks in `(function(){ …; return el })()`;
+a `hidden` page (`document.visibilityState`) drops all input, so keep the
+remote display awake and launch Chrome with backgrounding disabled
+(`--disable-backgrounding-occluded-windows --disable-renderer-backgrounding
+--disable-features=CalculateNativeWinOcclusion`).
+
 ### Capturing traffic - `scripts/cdp-sniff.mjs`
 
 The passive sniffer. Attaches to open tabs and streams XHR/fetch as NDJSON
