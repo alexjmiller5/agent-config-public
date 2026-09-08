@@ -2,7 +2,7 @@
 // Passive CDP network sniffer: attaches to your real logged-in Chrome and
 // streams XHR/fetch traffic (with response bodies) as NDJSON while you browse.
 //
-//   node cdp-sniff.mjs [--url <substr>] [--all] [--secs N] [--raw] > capture.ndjson
+//   node cdp-sniff.mjs [--url <substr>] [--all] [--secs N] [--raw] [--port N] > capture.ndjson
 //
 // Requires: chrome://inspect/#remote-debugging ticked. Click "Allow" when prompted.
 
@@ -53,20 +53,22 @@ function cleanBody(body) {
   return BODY_SECRET.test(body) ? mask(body) : body;
 }
 
-let port, wsPath;
-try {
-  [port, wsPath] = readFileSync(PORT_FILE, 'utf8').trim().split('\n');
+const cdpPort = flag('--port', null);   // dedicated-profile Chrome (Tier 3/4): no port file, no Allow sheet
+let wsUrl;
+if (cdpPort) wsUrl = (await (await fetch(`http://127.0.0.1:${cdpPort}/json/version`)).json()).webSocketDebuggerUrl;
+else try {
+  const [port, wsPath] = readFileSync(PORT_FILE, 'utf8').trim().split('\n'); wsUrl = `ws://127.0.0.1:${port}${wsPath}`;
 } catch {
   console.error(`No ${PORT_FILE}.\nTick "Allow remote debugging" at chrome://inspect/#remote-debugging`);
   process.exit(1);
 }
 
-const ws = new WebSocket(`ws://127.0.0.1:${port}${wsPath}`);
+const ws = new WebSocket(wsUrl);
 
 // Auto-approve Chrome's "Allow remote debugging?" sheet for THIS connection
 // (scripts/cdp-allow, macOS UI scripting; needs Accessibility). Best-effort:
 // if it fails the human can still click Allow within the timeout.
-spawn(`${dirname(fileURLToPath(import.meta.url))}/cdp-allow`, ['25'], { stdio: 'ignore', detached: true }).unref();
+if (!cdpPort) spawn(`${dirname(fileURLToPath(import.meta.url))}/cdp-allow`, ['25'], { stdio: 'ignore', detached: true }).unref();
 let id = 0;
 const pending = new Map();
 // Send a CDP command; sessionId routes it to a page instead of the browser.
