@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Open tabs inside a session's own window + named tab group (creates both on first use).
-//   node cdp-group.mjs "<group name>" [url ...]   -> window=<id> group=<id> tabs=<id,...>   (ids of the tabs opened by THIS call)
+//   node cdp-group.mjs "<group name>" [url ...]   -> window=<id> group=<id> tabs=<id,...> targets=<id,...>
+//       tabs = Chrome tab ids of the tabs THIS call opened (what chrome-cli prints/accepts); targets = their CDP
+//       targetIds in the same order (for cdp-eval.mjs --target); both empty when no url was given
 //   node cdp-group.mjs "<group name>" --close     -> closes the whole session window
 //   --port N   drive a dedicated-profile Chrome (Tier 3/4) instead of the real one (Tier 2, DevToolsActivePort + Allow sheet)
 //   --ext ID   extension to borrow the tabGroups API from (default: Claude in Chrome); the profile must have it installed
@@ -59,6 +61,8 @@ ws.onopen = async () => {
   try { ({ targetId: tid } = await send('Target.createTarget', { url, hidden: true })); }
   catch { hidden = false; ({ targetId: tid } = await send('Target.createTarget', { url, background: true })); }   // Chrome < 130: visible tab, closed below
   const { sessionId } = await send('Target.attachToTarget', { targetId: tid, flatten: true });
+  const pages = async () => (await send('Target.getTargets')).targetInfos.filter((t) => t.type === 'page');
+  const before = new Set((await pages()).map((t) => t.targetId));
   const expression = `(${body})(${JSON.stringify({ name, color, urls, close })})`;
   for (let i = 0; i < 50; i++) {   // the page needs a moment before the extension APIs are bound
     if ((await send('Runtime.evaluate', { expression: 'typeof chrome?.tabGroups', returnByValue: true }, sessionId)).result.value === 'object') break;
@@ -68,6 +72,9 @@ ws.onopen = async () => {
   await send('Target.closeTarget', { targetId: tid }).catch(() => {});
   if (r.exceptionDetails) { console.error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text, `\n(is extension ${ext} installed on this profile? it must hold the tabGroups permission)`); process.exit(3); }
   const v = r.result.value;
-  console.log(close ? `closed=${v.closed}` : `window=${v.window} group=${v.group} tabs=${v.tabs.join(',')}`);
+  if (close) { console.log(`closed=${v.closed}`); process.exit(0); }
+  const fresh = (await pages()).filter((t) => !before.has(t.targetId));   // new page targets = the tabs just opened, matched to urls in order
+  const targets = urls.map((u) => { const i = fresh.findIndex((t) => t.url.startsWith(u) || u.startsWith(t.url.replace(/\/$/, ''))); return i < 0 ? '' : fresh.splice(i, 1)[0].targetId; });
+  console.log(`window=${v.window} group=${v.group} tabs=${v.tabs.join(',')} targets=${targets.join(',')}`);
   process.exit(0);
 };
