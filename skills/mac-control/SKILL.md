@@ -38,7 +38,9 @@ Grant that binary, once, in System Settings → Privacy & Security:
   assistive access".
 - **Automation** - per (source app, target app) pair, granted by clicking
   Allow on the "X wants to control System Events" dialog that appears on the
-  machine's display the first time. Denied or never seen → `-1743`.
+  machine's display the first time. Denied → `-1743`; `AppleEvent timed out
+  (-1712)` from a fresh ssh shell means that dialog is up on the display
+  right now, unanswered.
 
 Rules that bite:
 
