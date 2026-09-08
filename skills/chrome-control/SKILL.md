@@ -229,26 +229,38 @@ both in nixpkgs, needs a CA install.
 
 Browsers are the heavy part of any automation; the agent session is a
 terminal. **The threshold is one tab: anything that needs more than a
-single tab at a time** - two sites, a profile per site, a scrape that
-outlives the conversation - runs its browsers on a second machine (a home
-server, a spare Mac) with the session staying where the user is. The session drives each remote Chrome over
-CDP through an ssh port-forward, so only websocket traffic crosses the
-wire and the user's own machine stays responsive.
+single tab at a time** - two sites, a scrape that outlives the
+conversation - runs its browser on a second machine (a home server, a
+spare Mac) with the session staying where the user is. The session drives
+the remote Chrome over CDP through an ssh port-forward, so only websocket
+traffic crosses the wire and the user's own machine stays responsive.
+
+**One shared agent Chrome per remote machine.** Declare it as a login item
+(a launchd user agent on macOS): a headed Chrome on its own data dir with a
+fixed `--remote-debugging-port`, kept alive. Every job attaches to that
+one endpoint and opens its own tab (`Target.createTarget`), and every login
+done in its window - by a job, or by the user over Screen Sharing - is
+there for every later run of every tool. A browser that holds all the
+user's logins also looks like a person's browser; a fresh single-site
+profile per tool looks like automation. Give a site its own profile and
+port only when isolation between sites is actually wanted.
 
 ```bash
-# on the remote host: a dedicated profile per site, its own debug port
-ssh <host> '"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  --remote-debugging-port=9400 --user-data-dir=$HOME/.local/share/<tool>/sessions/<site> \
-  --no-first-run >/dev/null 2>&1 &'
-# locally: forward the port, then drive 127.0.0.1:9400 exactly like Tier 3
-ssh -N -L 9400:127.0.0.1:9400 <host> &
+# the remote host runs one Chrome at login, e.g. (macOS launchd agent):
+#   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+#     --user-data-dir=$HOME/.local/share/agent-chrome --remote-debugging-port=9222 --no-first-run
+# locally: forward the port, then drive 127.0.0.1:9222 exactly like Tier 3
+ssh -N -L 9222:127.0.0.1:9222 <host> &
 ```
 
 Rules that make this work:
 
-- **Profiles live on the remote host permanently.** Device trust, "remember
-  this browser", and cookies accumulate there; never copy them back and
-  forth. One profile per site, one port per site, so runs can overlap.
+- **The profile lives on the remote host permanently.** Device trust,
+  "remember this browser", and cookies accumulate there; never copy them
+  back and forth.
+- **Your tab is yours, the browser is not.** Other jobs may be attached at
+  the same time: create your own target, never act on "the active tab",
+  and close what you opened.
 - **Secrets travel over stdin, never the command line.** `printf '%s' "$T" |
   ssh <host> 'read -r T; TOKEN="$T" <script>'` keeps the value out of both
   machines' process lists and out of the transcript. A remote ssh session
@@ -260,35 +272,35 @@ Rules that make this work:
   from Messages, files, a local database. Either the remote host has that
   state (synced Messages) or the script fetches it over ssh.
 - **Human handoff = Screen Sharing.** When a site needs the person (an
-  SMS-only login, a CAPTCHA, "confirm on your phone"), they open the remote
+  SMS-only login, a CAPTCHA, "confirm on your phone", a "Continue with
+  Google" that needs the account signed in), they open the remote
   machine's screen (macOS Screen Sharing over the tailnet, one click), do
-  the step in that Chrome, and close it. Before asking, screenshot the
-  page over the forwarded CDP (`Page.captureScreenshot`) and show it in
-  chat - often that alone resolves it.
+  the step in the shared Chrome, and close it - it persists for everything
+  after. Before asking, screenshot the page over the forwarded CDP
+  (`Page.captureScreenshot`) and show it in chat - often that alone
+  resolves it.
 - **Chrome 136+ still ignores `--remote-debugging-port` on the default
-  profile** (gotcha 1); a dedicated `--user-data-dir` is what makes the
-  port listen, remote or not.
+  profile** (gotcha 1); the dedicated `--user-data-dir` is what makes the
+  port listen, remote or not, and what keeps the per-connection Allow
+  sheet away.
 - **If the user might close or leave the laptop, the driver moves too.**
   An ssh port-forward dies with the laptop's session, so a job that must
   survive the user stepping away runs its driver ON the remote host,
-  talking to `127.0.0.1:<port>` there, launched detached (`nohup … &`;
-  macOS has no `setsid`), with its log on that host. The session then only
-  checks in over ssh (`tail` the log, `pgrep` the driver). Do this BEFORE
-  the user leaves; keep any local run going until the remote one is
-  confirmed writing, then stop the local one. Google-account sites need a
-  one-time sign-in in that remote profile (Screen Sharing), after which it
-  persists for every later run.
+  talking to `127.0.0.1:<port>` there, with its log on that host. The
+  session then only checks in over ssh (`tail` the log, `pgrep` the
+  driver). Do this BEFORE the user leaves; keep any local run going until
+  the remote one is confirmed writing, then stop the local one.
 - **Plain `ssh host 'nohup cmd &'` is NOT enough on macOS** - the process
   dies with the ssh session (so did a `screen -dmS` session, observed
-  2026-09-06). What survives: launch the BROWSER with `open -na "Google
-  Chrome" --args …` (lands in the console user's GUI session, so it gets a
-  visible window for Screen Sharing; a `launchctl submit`-ed Chrome answers
-  on its port but has NO window), and run the DRIVER as a transient launchd
-  job: `launchctl submit -l <label> -- /bin/bash <script>`. launchd jobs
-  start with a bare PATH - `export PATH=…` at the top of the script or
-  every nix/homebrew binary (node!) silently fails as "" output. Check
-  the job with `launchctl list | grep <label>`, remove with `launchctl
-  remove <label>`.
+  2026-09-06). What survives: a declared launchd agent for anything
+  permanent (the shared Chrome itself), and for a one-off driver a
+  transient launchd job: `launchctl submit -l <label> -- /bin/bash
+  <script>`. launchd jobs start with a bare PATH - `export PATH=…` at the
+  top of the script or every nix/homebrew binary (node!) silently fails
+  as "" output. Check the job with `launchctl list | grep <label>`, remove
+  with `launchctl remove <label>`. (`open -na "Google Chrome" --args …`
+  also survives and gets a window, but a browser started that way is not
+  declared - prefer the launchd agent.)
 
 ## Screenshots (shell - do NOT default to the MCP for these)
 
