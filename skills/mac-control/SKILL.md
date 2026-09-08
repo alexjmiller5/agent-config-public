@@ -95,7 +95,14 @@ Grant that binary, once, in System Settings → Privacy & Security:
   is recorded as **Deny** and never shown again - flip it on afterwards in
   Privacy & Security → **Automation** → the source binary → target app
   (verify in the user TCC db: `kTCCServiceAppleEvents` rows, `auth_value` 2
-  = allowed, 0 = denied).
+  = allowed, 0 = denied). When that pane's toggles refuse to move (seen on
+  26.x for path-identified clients like `sshd-keygen-wrapper`), clear the
+  rows and re-prompt instead: `tccutil reset AppleEvents` (no bundle-id
+  form exists for path clients; it wipes every app's Automation grants, so
+  check the table first), then fire the request with a long timeout
+  (`osascript -e 'with timeout of 600 seconds' -e 'tell application
+  "System Events" to get name of every process' -e 'end timeout'`) so the
+  dialog stays up until a human clicks Allow over Screen Sharing.
 
 Rules that bite:
 
