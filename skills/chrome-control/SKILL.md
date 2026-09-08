@@ -60,12 +60,12 @@ is the only reason to have more than one.
 How it works: CDP has no tab-group API, so the script opens a hidden
 target on an installed extension's origin and calls `chrome.tabs` /
 `chrome.tabGroups` from there. The profile needs an extension holding the
-`tabGroups` permission - Claude in Chrome (the default `--ext`) does; a
-dedicated agent profile gets it once, by a human, from the Web Store in its
-own window (over Screen Sharing on a remote host) and keeps it. There is no
-declarative route on macOS: a user-level `ExtensionInstallForcelist` lands
-as a Recommended policy, which Chrome ignores for force-installs, and the
-store itself sits behind a Google sign-in. Without `--port` the call goes through
+`tabGroups` permission - Claude in Chrome (the default `--ext`) does. A
+dedicated agent profile gets it through Chrome policy (`ExtensionSettings`
+in a root-owned plist under `/Library/Managed Preferences` on macOS, which
+is Mandatory; the same key in the user's defaults domain is only
+Recommended and ignored). Signing into the extension is a one-time human
+step in that browser's window. Without `--port` the call goes through
 the real profile (Tier 2, one auto-approved Allow sheet, ~2 s); with
 `--port` it is prompt-free.
 
