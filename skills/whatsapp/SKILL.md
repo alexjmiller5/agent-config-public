@@ -36,10 +36,14 @@ WhatsApp.app is installed and logged in (linked to the phone).
 - Sends: the app running the script (terminal, IDE, agent host) needs
   **Accessibility** (System Settings → Privacy & Security → Accessibility).
   Without it `wa-send` reports the composer/Send button as not found.
-- Tier 2: `brew install openclaw/tap/wacli` (declare it in machine config
-  where machines are declarative), then the user runs `wacli auth` once.
-  Store: `~/.wacli` (`session.db` = the linked-device keys - never touch;
-  `wacli.db` = its own message mirror).
+- Tier 2: install wacli (`brew install openclaw/tap/wacli`, or a release
+  binary declared in machine config), then the user runs `wacli auth` once.
+  Store: `~/.wacli` by default (`session.db` = the linked-device keys -
+  never touch; `wacli.db` = its own message mirror); `wacli doctor --json`
+  shows the active store. A linked device is one live copy of that
+  session: if the machine config syncs `session.db` between machines (a
+  secrets-manager round-trip in a PATH wrapper), never run wacli on two
+  machines at the same moment.
 - `wa-send` brings WhatsApp to the front for ~2 s and restores the previous
   app. Don't run it while the user is typing.
 
