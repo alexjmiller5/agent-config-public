@@ -9,12 +9,63 @@ Three tiers, cheapest first. Start at the lowest that fits.
 
 | Need | Use |
 |---|---|
-| Local Mac, interactive Claude Code session, Pro/Max plan | **Tier 0** - the built-in `computer-use` MCP (`/mcp` → enable). Screenshots, clicks, typing, per-app approval, screenshots auto-downscaled. Not available with `-p`, over ssh, on a remote machine, or in background jobs. |
+| Local Mac, interactive Claude Code session, Pro/Max plan | **Tier 0** - the built-in `computer-use` MCP (section below). Screenshots, clicks, typing, per-app approval. Not available with `-p`, over ssh, on a remote machine, or in background jobs. |
 | Any Mac reachable from a shell (ssh to a headless mini, cron, background sessions) | **Tier 1** - stock macOS: `screencapture` for eyes, System Events (osascript) for hands. No install. This skill's core. |
 | Heavy or repeated UI work on that machine: annotated screenshots with element IDs, semantic clicks, background delivery without stealing focus | **Tier 2** - [Peekaboo](https://github.com/steipete/Peekaboo) CLI (`brew install openclaw/tap/peekaboo`, macOS 15+, MIT). |
 
 Browser content is never done with any of these - chrome-control (CDP) is
 exact and cheaper.
+
+## Tier 0: the built-in computer use (Claude Code)
+
+Tools are `mcp__computer-use__*` (load them all with one ToolSearch:
+query `computer-use`, max_results 30). Enable once per project via `/mcp`
+→ `computer-use` → Enable. Requires an interactive session on the local Mac.
+
+**Flow, every session:**
+
+1. `request_access` with the list of apps you need - the user approves per
+   app, per session (Finder counts as an app: desktop, Dock, Go to Folder).
+   Re-request mid-task when a new app comes up. `list_granted_applications`
+   tells you what you already have.
+2. `screenshot` first; act; `screenshot` again to verify. Screenshots are
+   auto-downscaled - never resize the display. Use `zoom` on a region when
+   text is too small instead of guessing.
+3. Batch a fixed sequence (`left_click`, `type`, `key`, `wait`) with
+   `computer_batch` - one round-trip instead of five. Split the batch at any
+   point where you must look before continuing.
+4. Type with `type`; shortcuts with `key` (`cmd+s`); paste large text via
+   `write_clipboard` + `key cmd+v`; `read_clipboard` to get text back out.
+
+**App tiers** (enforced against the frontmost app, the error names the tier):
+browsers → *read* (screenshots only - drive them with chrome-control);
+terminals/IDEs → *click* (no typing, no right-click - shell work goes
+through Bash); everything else → *full*.
+
+**Behaviour to expect:** other apps are hidden while it works and restored
+after the turn; your terminal is excluded from screenshots; one session
+holds a machine-wide lock until it exits (a second session errors naming
+the holder); the user can abort with Esc at any time. It refuses to
+execute trades or move money - hand those to the user. Never click links
+in mail/messages with it (open the URL through chrome-control instead).
+
+**When Tier 0 is the wrong tool, even locally:**
+
+- the target is a browser tab, a terminal, or an IDE (tier-limited);
+- the action must run without hiding the user's apps or grabbing the
+  session lock (a background dialog watcher, a launchd job, a cron);
+- the session is `-p`/non-interactive, a subagent, or a background job;
+- you need a window that is not frontmost, or a precise element by name
+  rather than by pixel.
+
+Those are Tier 1 jobs. **Mixing them in one task is normal:** Tier 0 for
+the interactive look-and-click parts, a System Events one-liner (or a
+spawned script like chrome-control's `cdp-allow`) for the sheet that pops
+up behind it. The TCC grants differ: Tier 0's grants belong to the terminal
+app running Claude Code; a Bash one-liner's grants belong to that same
+terminal app locally, or to `sshd-keygen-wrapper` over ssh (table below).
+Granting both once per machine avoids the "it worked from the MCP but not
+from Bash" surprise.
 
 ## Prerequisites (TCC) - one human grant per machine
 
