@@ -12,33 +12,35 @@ For full syntax trust `spotify_player -h` / `spotify_player <cmd> -h` over memor
 ## Auth - no per-machine step
 
 `spotify_player` on PATH is an op-authed wrapper (nix-config
-`home/spotify-player.nix`, same family as the gh/gog/wacli wrappers): its
-two auth files - `credentials.json` (librespot session) and
-`user_client_token.json` (Web API token + refresh token) - live in the
-"AI Agent Spotify Player Credentials" 1Password item and are handed to the
-binary through a per-call mktemp cache folder (`-C`) that is deleted on
-exit. Any change (a token refresh, a fresh login) is written back to the
-item, so every machine is authed as soon as the item is. Nothing to run on
-a new machine. Caller-set `-C` bypasses the round-trip. Spotify Premium
-required.
+`home/spotify-player.nix`, same family as the gh/gog/wacli wrappers). Its
+auth files - `credentials.json` (librespot session) and one
+`<client_id>_token.json` per Web API client (token + refresh token) - live
+in the "AI Agent Spotify Player Credentials" 1Password item and are handed
+to the binary through a per-call mktemp cache folder (`-C`) deleted on
+exit. Any change (a token refresh, a login) is written back, so every
+machine is authed as soon as the item is; nothing to run on a new machine.
+Caller-set `-C` bypasses the round-trip. Spotify Premium required.
 
-- **Re-login (item reset, refresh token expired after 6 months idle, or the
-  wrapper prints its write-back WARNING):** launch the TUI once through the
-  wrapper (`spotify_player`, no args) - it runs both OAuth consents in the
-  browser (two "Agree" pages, click or drive them with chrome-control) and
-  the wrapper stores the result on quit. `spotify_player authenticate` is
-  NOT enough: it mints only the Web API token, never `credentials.json`
-  (that file is written by a session connect, i.e. the TUI), and CLI
-  subcommands need both. The TUI needs a pty; headless, run it under
-  `script -q /dev/null spotify_player` and kill the binary once
-  `credentials.json` exists.
-- **Never set `client_id`** - the built-in default is ncspot's
-  extended-quota app; a personal one runs in restricted mode (429/403s).
-- **429 Too Many Requests on every command** = Spotify throttling the
-  shared default app for this account (seen after several OAuth logins and
-  TUI launches in a row; lasted 30+ minutes with a steady Retry-After that
-  never shrank). Not an auth problem and not fixable client-side - stop
-  calling and retry later; each probe extends it.
+- **Web API client = Alex's own dev app** ("AI Agent Spotify OAuth Client"
+  item; the wrapper passes it as `-o client_id=`). The binary is built from
+  upstream master, whose custom-client mode falls back to the built-in
+  ncspot client on 4xx and routes `search`, `me/playlists`, `playlists/`
+  to ncspot always (`ncspot_only_get_endpoints`). Reason: ncspot alone
+  gets throttled for hours (429 on every call); a post-2024 dev app alone
+  breaks on stripped fields (`missing field followers/popularity`). Never
+  copy either client id into config by hand - the wrapper owns it.
+- **Re-login (item reset, refresh token expired - 180 days in development
+  mode - or the wrapper prints its write-back WARNING):**
+  `spotify_player authenticate` through the wrapper re-mints the Web API
+  tokens (two browser consents: the dev app and "Spotify for Desktop";
+  click Agree or drive `button[data-testid=auth-accept]` with
+  chrome-control). Only `credentials.json` needs a TUI launch (a session
+  connect writes it; `authenticate` never does) - it is minted once and is
+  account-bound, so it rarely needs redoing. The TUI needs a real pty;
+  `script -q /dev/null spotify_player` works from an agent shell.
+- **429 on ncspot-routed calls (search)** = Spotify throttling the shared
+  default app; the binary retries `api_rate_limit_retries` times, then
+  errors. Not an auth problem, not fixable client-side - retry later.
 
 ## Script recipes (the parts agents guess wrong)
 
