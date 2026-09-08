@@ -1,31 +1,93 @@
 ---
 name: chrome-control
-description: ALWAYS invoke FIRST for ANY browser task - anything touching Chrome, a web page, a tab, or a localhost dev server - reading/dumping HTML, listing tabs, injecting or executing JS, clicking through or filling pages, E2E-testing a web UI, capturing network traffic with response bodies, reading cookies or console. Read and drive the user's Chrome from the shell; the claude-in-chrome MCP tools are a LAST RESORT (slow) and this skill says when they're allowed - so it must load before any mcp__claude-in-chrome__* call. Mechanics only; for the reverse-engineering workflow that sits on top, use the web-recon skill.
+description: ALWAYS invoke FIRST for ANY browser task - anything touching Chrome, a web page, a tab, or a localhost dev server - reading/dumping HTML, listing tabs, injecting or executing JS, clicking through or filling pages, E2E-testing a web UI, capturing network traffic with response bodies, reading cookies or console, screenshots. Drives the shared agent Chrome on the configured host (never the local laptop's), every session in its own window + tab group; the claude-in-chrome MCP tools are a LAST RESORT and this skill says when they're allowed - so it must load before any mcp__claude-in-chrome__* call. Mechanics only; for the reverse-engineering workflow that sits on top, use the web-recon skill.
 ---
 
 # Chrome Control
 
-Three tiers, cheapest first. **Start at Tier 1 and only climb when the tier
-you're on genuinely can't answer the question.** Tier 1 needs no setup and no
-clicks; Tier 2 costs the user a click; Tier 3 costs them their logged-in session.
+## The browser runs on the agent-Chrome host, not on this machine
+
+When `$CHROME_CONTROL_HOST` is set (your machine config exports it), EVERY
+browser task drives that host's shared agent Chrome - Tier 4 below: a
+headed Chrome on its own data dir, fixed remote-debugging port, kept alive
+as a login item, holding every login ever done in it. The Chrome on the
+machine you are running on is off limits: driving it slows the user's own
+laptop down. The ONE exception is a task literally about a tab the user
+has open in front of them ("pull the HTML of this tab", "what does my
+current tab say") - then Tier 1/2, locally, and nothing more.
+
+```bash
+H="$CHROME_CONTROL_HOST"; P="${CHROME_CONTROL_PORT:-9222}"
+ssh -N -L 9223:127.0.0.1:$P "$H" &                 # once per session; 9223 locally so this machine's own Chrome (9222) is untouched
+curl -s 127.0.0.1:9223/json/version | head -2      # alive?
+S=~/.claude/skills/chrome-control/scripts
+node $S/cdp-group.mjs "claude: <task>" https://example.com --port 9223         # your tabs (next section)
+node $S/cdp-eval.mjs 9223 'document.title' --target <targetId>                  # = chrome-cli source/execute
+node $S/cdp-eval.mjs 9223 --shot /path.png --target <targetId>                  # = screenshot
+curl -s 127.0.0.1:9223/json/list | jq -r '.[]|select(.type=="page")|.id+" "+.url'   # = list tabs
+```
+
+There is no `chrome-cli` on the host - `cdp-eval.mjs --port` covers
+source/execute/shot/trusted-click, `/json/list` covers tab listing. A dev
+server on THIS machine is reachable from the host through a reverse
+forward in the same ssh (`-R 5173:127.0.0.1:5173`, then open
+`http://127.0.0.1:5173` there). A job that must outlive this session, or
+the user stepping away, runs its driver on the host (Tier 4 rules). Human
+steps (logins, CAPTCHAs) happen over Screen Sharing on the host, and stick.
+
+## Every session gets its own window + tab group (MANDATORY)
+
+Every tab you open lives in a window created for this session, inside a
+tab group named after the session. Popups, OAuth redirects and
+`target=_blank` pages spawned from those tabs land in the same window and
+group (Chrome keeps a tab's children with it), so the user sees one
+labelled cluster per agent session and never finds strays mixed into their
+own windows. `scripts/cdp-group.mjs` does all of it:
+
+```bash
+G=~/.claude/skills/chrome-control/scripts/cdp-group.mjs   # add --port 9223 on the agent host; without it: local real profile (Tier 2)
+node $G "claude: <task>" https://a.com https://b.com   # first call creates window + group, later calls add tabs to it
+# -> window=<id> group=<id> tabs=<id,...> targets=<targetId,...>   tabs = Chrome/chrome-cli tab ids, targets = CDP ids, same order
+node $G "claude: <task>"                                # no urls: sweep strays in the session window into the group
+node $G "claude: <task>" --close                        # end of task: closes the whole session window
+```
+
+The name is `claude: <short task>`, the same string on every call. One
+window per session is the rule; parallel drivers that genuinely need a
+window each (several Maps windows at once) use one name per driver - that
+is the only reason to have more than one.
+
+How it works: CDP has no tab-group API, so the script opens a hidden
+target on an installed extension's origin and calls `chrome.tabs` /
+`chrome.tabGroups` from there. The profile needs an extension holding the
+`tabGroups` permission - Claude in Chrome (the default `--ext`) does; a
+dedicated agent profile gets it once (a force-install policy, or one click
+over Screen Sharing) and keeps it. Without `--port` the call goes through
+the real profile (Tier 2, one auto-approved Allow sheet, ~2 s); with
+`--port` it is prompt-free.
+
+## Local tiers (the exception above, and the mechanics Tier 4 reuses)
+
+Cheapest first; climb only when the tier you're on genuinely can't answer.
+Tier 1 needs no setup and no clicks; Tier 2 costs an auto-approved sheet;
+Tier 3 costs the logged-in session.
 
 | Need | Tier |
 |---|---|
-| HTML of an open tab, tab list, run some JS | **1 - `chrome-cli`** |
-| Network traffic, response bodies, console, cookies | **2 - CDP on the real profile** |
-| Unattended/scripted browsing, no human present | **3 - throwaway profile** |
-| Anything beyond one tab at a time (multiple sites, several profiles, long scrapes) | **4 - remote Chrome on another machine** |
-| The user may close or walk away from their laptop before the job ends | **4 - and the DRIVER runs on the remote host too** |
+| HTML of the user's open tab, tab list, run some JS there | **1 - `chrome-cli`** |
+| Network traffic, response bodies, console, cookies of the user's session | **2 - CDP on the real profile** |
+| Unattended/scripted browsing with no agent host configured | **3 - throwaway profile** |
+| Everything else - the default whenever `$CHROME_CONTROL_HOST` is set | **4 - the agent-Chrome host** |
 
 ## The claude-in-chrome MCP is a LAST RESORT
 
-The `mcp__claude-in-chrome__*` extension tools are slower than the shell tiers
-(one round-trip per action, frequent script-injection timeouts on busy pages)
-and their JS runs in an isolated world - see gotcha 0(c). Only fall back to
-them when a shell tier genuinely cannot do the job (e.g. native
-mouse-coordinate clicks on a canvas where DOM events won't do, or
-screenshots), and return to the shell tiers immediately after. Any tab the
-MCP opens is closed by you, not the user - see "Close what you open".
+The `mcp__claude-in-chrome__*` extension tools drive the LOCAL Chrome, one
+slow round-trip per action, with JS in an isolated world (gotcha 0(c)).
+With an agent host configured they are not an option at all: screenshots
+are `cdp-eval.mjs --shot`, coordinate clicks are `cdp-eval.mjs --click`.
+Only in the local exception may they fill a gap a shell tier can't (native
+mouse clicks on a canvas), and any tab they open is closed by you, not the
+user - see "Close what you open".
 
 ---
 
@@ -125,7 +187,7 @@ way to click things that ignore synthetic events (Google Maps list links,
 icon pickers). Steps are JSON, one per line.
 
 ```bash
-# one-shot
+# one-shot (add --port 9223 on the agent host: no Allow sheet there)
 node ~/.claude/skills/chrome-control/scripts/cdp-act.mjs --url <tab-substr> < steps.json
 # persistent: ONE Allow click, then append steps to the file as you go
 node ~/.claude/skills/chrome-control/scripts/cdp-act.mjs --url <substr> --follow steps.ndjson &
@@ -172,6 +234,7 @@ node ~/.claude/skills/chrome-control/scripts/cdp-sniff.mjs \
 
 # options
 --url <substr>   only watch tabs whose URL contains this
+--port N         a dedicated-profile Chrome (the agent host over its forward) instead of the real one
 --secs N         capture window (default 300)
 --all            include non-XHR (images, scripts, documents)
 --raw            do NOT redact credentials (default is redacted)
@@ -227,13 +290,16 @@ both in nixpkgs, needs a CA install.
 
 ## Tier 4 - remote Chrome on another machine
 
+`$CHROME_CONTROL_HOST` (ssh host) and `$CHROME_CONTROL_PORT` (default 9222)
+name this machine's agent Chrome; the top of this skill is the day-to-day
+recipe, this section is why it is shaped that way. `cdp-eval.mjs`,
+`cdp-group.mjs`, `cdp-act.mjs` and `cdp-sniff.mjs` all take `--port` for it.
+
 Browsers are the heavy part of any automation; the agent session is a
-terminal. **The threshold is one tab: anything that needs more than a
-single tab at a time** - two sites, a scrape that outlives the
-conversation - runs its browser on a second machine (a home server, a
-spare Mac) with the session staying where the user is. The session drives
-the remote Chrome over CDP through an ssh port-forward, so only websocket
-traffic crosses the wire and the user's own machine stays responsive.
+terminal. So the browser runs on a second machine (a home server, a spare
+Mac) with the session staying where the user is, driving it over CDP
+through an ssh port-forward: only websocket traffic crosses the wire and
+the user's own machine stays responsive.
 
 **One shared agent Chrome per remote machine.** Declare it as a login item
 (a launchd user agent on macOS): a headed Chrome on its own data dir with a
@@ -302,10 +368,12 @@ Rules that make this work:
   also survives and gets a window, but a browser started that way is not
   declared - prefer the launchd agent.)
 
-## Screenshots (shell - do NOT default to the MCP for these)
+## Screenshots
 
-Headless Chrome's `--screenshot` flag renders any URL that needs no login
-(localhost dev servers, public pages) straight to a PNG - no prompts, no MCP:
+On the agent host: `cdp-eval.mjs <port> --shot /path.png --target <id>`
+(`Page.captureScreenshot`), no prompts. With no host configured, a URL that
+needs no login (a localhost dev server, a public page) renders straight to
+a PNG with headless Chrome - a short-lived process, not the user's browser:
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
@@ -317,9 +385,8 @@ Headless Chrome's `--screenshot` flag renders any URL that needs no login
 The PNG is written even when the process then fails to exit (observed Chrome
 139) - background it or wrap in a short timeout, then `pkill -f` the temp
 profile path. `--virtual-time-budget` gives client-side JS (charts, fetches)
-time to settle before capture. Pages behind a login are the one case where
-screenshots legitimately fall back to the claude-in-chrome MCP (or CDP
-`Page.captureScreenshot` on Tier 2).
+time to settle before capture. A page behind a login on the local real
+profile is `cdp-act.mjs`'s `{"shot":...}` step (Tier 2).
 
 0. **`chrome-cli execute` quirks** (chrome-cli 1.9 / Chrome 139, observed
    2026-08-25): (a) a non-string result crashes it
@@ -367,18 +434,22 @@ Every tab or window you create is yours to close - the user otherwise inherits
 a browser full of leftovers from every agent session. Before ending the task
 (and before answering any "done" message), close everything you opened:
 
+- The session window: `cdp-group.mjs "<name>" --close` (add `--port` on the
+  agent host) - one call takes every tab of the session with it, strays
+  included. This is the normal case; the rest are for tabs opened some
+  other way.
 - `chrome-cli open` prints `Id: <tab>` / `Window id: <win>` - keep them and
   run `chrome-cli close -t <id>` (or `close -w <win>` for an `open -n` window)
   when finished with it. A tab you navigated but did not create stays open.
 - MCP `tabs_create_mcp` → `tabs_close_mcp` on that same tab id.
-- Tier 3/4 throwaway Chromes → kill the process (gotcha 5), which takes its
-  windows with it.
+- Tier 3 throwaway Chromes → kill the process (gotcha 5), which takes its
+  windows with it. The agent host's Chrome is never killed - it is shared.
 - CDP scripts (`cdp-act.mjs` / `cdp-sniff.mjs`) → `{"quit":true}` / let the
   capture window end, then close any tab you opened for them.
 
-Track ids as you go; do not rely on `chrome-cli list tabs` at the end to guess
-which were yours. Leaving a tab open is only acceptable when the user asked to
-see it, and then say so in chat.
+Track ids as you go; do not rely on a tab listing at the end to guess which
+were yours. Leaving a tab open is only acceptable when the user asked to see
+it, and then say so in chat.
 
 ## Human handoff
 

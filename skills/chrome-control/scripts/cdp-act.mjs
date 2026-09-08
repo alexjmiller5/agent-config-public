@@ -2,7 +2,7 @@
 // Trusted input + request capture against the real, logged-in Chrome (Tier 2).
 // One WebSocket connection = one "Allow remote debugging?" click by the user.
 //
-//   node cdp-act.mjs --url <tab-url-substring> [--secs N] < steps.json
+//   node cdp-act.mjs --url <tab-url-substring> [--secs N] [--port N] < steps.json
 //   node cdp-act.mjs --url <substr> --follow <file> [--secs N]   # persistent: one Allow click,
 //        then append one JSON step per line to <file>; results stream to stdout; {"quit":true} ends.
 //
@@ -24,16 +24,18 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.startsWith('--') ? [a.slice(2), all[i + 1] ?? true] : []).filter(Boolean));
-const [port, path] = readFileSync(join(homedir(), 'Library/Application Support/Google/Chrome/DevToolsActivePort'), 'utf8').trim().split('\n');
+let wsUrl;   // --port N: a dedicated-profile Chrome (Tier 3/4) - no port file, no Allow sheet
+if (args.port) wsUrl = (await (await fetch(`http://127.0.0.1:${args.port}/json/version`)).json()).webSocketDebuggerUrl;
+else { const [port, path] = readFileSync(join(homedir(), 'Library/Application Support/Google/Chrome/DevToolsActivePort'), 'utf8').trim().split('\n'); wsUrl = `ws://127.0.0.1:${port}${path}`; }
 const steps = args.follow ? null : JSON.parse(readFileSync(0, 'utf8'));
 const secs = Number(args.secs ?? 600);
 
-const ws = new WebSocket(`ws://127.0.0.1:${port}${path}`);
+const ws = new WebSocket(wsUrl);
 
 // Auto-approve Chrome's "Allow remote debugging?" sheet for THIS connection
 // (scripts/cdp-allow, macOS UI scripting; needs Accessibility). Best-effort:
 // if it fails the human can still click Allow within the timeout.
-spawn(`${dirname(fileURLToPath(import.meta.url))}/cdp-allow`, ['25'], { stdio: 'ignore', detached: true }).unref();
+if (!args.port) spawn(`${dirname(fileURLToPath(import.meta.url))}/cdp-allow`, ['25'], { stdio: 'ignore', detached: true }).unref();
 let id = 0; const pending = new Map(); const listeners = [];
 const send = (method, params = {}, sessionId) => new Promise((res, rej) => {
   const msg = { id: ++id, method, params }; if (sessionId) msg.sessionId = sessionId;

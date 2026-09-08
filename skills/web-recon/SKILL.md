@@ -38,9 +38,13 @@ Before touching anything, establish with the user:
   chrome-cli source | grep -oE '__(NEXT_DATA|INITIAL_STATE|NUXT)__' | head
   ```
 
+  (`chrome-cli source` / `execute` below are the local-exception forms; on
+  the agent-Chrome host the same thing is `cdp-eval.mjs 9223 '<expr>'
+  --target <id>` on a tab you opened with `cdp-group.mjs`.)
+
 ## 2. Capture
 
-Capture per `chrome-control` Tier 2 (`--url target.com --secs 180`), then
+Capture per `chrome-control` (`cdp-sniff.mjs --url target.com --secs 180`, `--port 9223` on the agent host), then
 drive the page - by hand, by `chrome-cli execute`, or by asking the user.
 
 Exercise the behaviour you want to replicate: load the list, page to page 2,
