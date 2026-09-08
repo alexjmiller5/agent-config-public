@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Evaluate one JS expression in the first page target of a CDP Chrome (Tier 3/4).
 //   node cdp-eval.mjs <port> '<expression>' [--url <substring>]   -> prints the result value
+//   node cdp-eval.mjs <port> --new-window <url>          -> opens a new WINDOW, prints its targetId
+//   any mode: --target <targetId> addresses that page instead of the first --url match (parallel drivers)
 //   node cdp-eval.mjs <port> --shot /path.png [--url <substring>]   -> Page.captureScreenshot of that page
 //   node cdp-eval.mjs <port> --click '<expr returning an Element>' [--url <substring>]
 //       -> scrolls it into view and sends a TRUSTED mouse click at its centre (Input.dispatchMouseEvent);
@@ -10,11 +12,22 @@ const argv = process.argv.slice(2);
 const port = argv[0];
 const clickMode = argv.includes('--click');
 const shotPath = argv.includes('--shot') ? argv[argv.indexOf('--shot') + 1] : null;
-const expr = clickMode ? argv[argv.indexOf('--click') + 1] : (shotPath ? '1' : argv[1]);
+const targetId = argv.includes('--target') ? argv[argv.indexOf('--target') + 1] : null;
+const newWin = argv.includes('--new-window') ? argv[argv.indexOf('--new-window') + 1] : null;
+const expr = clickMode ? argv[argv.indexOf('--click') + 1] : ((shotPath || newWin) ? '1' : argv[1]);
 const rest = argv.slice(1);
 const want = rest.includes('--url') ? rest[rest.indexOf('--url') + 1] : null;
+if (newWin) {   // open a NEW WINDOW (not a tab) and print its targetId - one window per parallel driver
+  const ver = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+  const bws = new WebSocket(ver.webSocketDebuggerUrl);
+  await new Promise((res, rej) => { bws.onopen = res; bws.onerror = rej; });
+  bws.send(JSON.stringify({ id: 1, method: 'Target.createTarget', params: { url: newWin, newWindow: true } }));
+  const tid = await new Promise(res => { bws.onmessage = e => { const m = JSON.parse(e.data); if (m.id === 1) res(m.result.targetId); }; });
+  bws.close(); process.stdout.write(tid); process.exit(0);
+}
 const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-const t = list.find(x => x.type === 'page' && (!want || x.url.includes(want)) && !x.url.startsWith('chrome'))
+const t = (targetId ? list.find(x => x.id === targetId) : null)
+       || list.find(x => x.type === 'page' && (!want || x.url.includes(want)) && !x.url.startsWith('chrome'))
        || list.find(x => x.type === 'page' && !x.url.startsWith('chrome-extension'));
 if (!t) { console.error('no page target'); process.exit(1); }
 const ws = new WebSocket(t.webSocketDebuggerUrl);
