@@ -218,8 +218,20 @@ matches, `set els to entire contents of it`, click the button whose
 queued dialogs can appear behind the first one.
 
 Since Mojave, synthetic events are ignored unless the sender has
-Accessibility, and a few security prompts (TCC's own consent dialogs) reject
-synthetic input regardless - those are the human-only bootstrap above.
+Accessibility. The Automation ("X wants to control Y") consent dialogs are
+windows of the `UserNotificationCenter` process and DO accept a System
+Events click once the sender has Accessibility plus Automation for System
+Events itself - so the human bootstrap is exactly one Allow (System
+Events); every later app's prompt is self-serve:
+
+```bash
+# fire the request in the background so its dialog stays up, then click it
+nohup osascript -e 'with timeout of 120 seconds' -e 'tell application "Finder" to get name' -e 'end timeout' >/tmp/ae.out 2>&1 &
+sleep 3; osascript -e 'tell application "System Events" to tell process "UserNotificationCenter" to click (first button of window 1 whose name is "Allow")'
+```
+
+The Accessibility and Screen Recording grants themselves (admin password,
+protected UI) stay human-only.
 Dialogs that ask for an **admin password** accept `keystroke` into the
 field, but that means the password transits the shell: only with the user's
 explicit say-so, never cached.
