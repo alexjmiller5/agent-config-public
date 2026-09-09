@@ -13,4 +13,12 @@ const click = events.find(e => e.params.type === 'mousePressed');
 assert.equal(click.params.y, 160, 'Click the settled position, not the pre-scroll rectangle');
 await assert.rejects(clickElement(async () => {}, async expr => expr.includes('scrollIntoView') ? true :
   {x: 1, y: 1, w: 20, h: 20, hit: false}, 'target', 1), /obscured|settle/);
+// Lazy-loaded rows can push the requested element outside the viewport again.
+let scrolls = 0;
+await clickElement(async () => {}, async expr => {
+  if (expr.includes('scrollIntoView')) { scrolls++; return true; }
+  return {x: 100, y: scrolls < 3 ? 1500 : 200, w: 40, h: 20,
+    outside: scrolls < 3, hit: scrolls >= 3};
+}, 'target', 1);
+assert.equal(scrolls, 3);
 console.log('Click layout and occlusion checks passed');
