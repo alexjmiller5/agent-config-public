@@ -203,9 +203,12 @@ Steps: `{"eval":"<expr>"}` `{"click":"<expr returning Element>"}`
 `{"capture":"<url substr>"}` (prints matching request/response bodies)
 `{"quit":true}`. Output is NDJSON on stdout.
 
-**Trusted input is not magic**: it clicks where you point, but an app that
-opens an editor only from its own internal state still won't cooperate
-(see the note-editing failure documented in `places-sync`).
+**Click the settled element.** Both actors scroll the clickable element
+into view, wait for its rectangle to stop moving, and hit-test its center
+before sending input. A layout can move after scrollIntoView; an old
+coordinate can activate a neighboring control. Select the clickable
+ancestor when a label has pointer-events disabled. Obscured targets fail
+without sending a click. Check with `node scripts/test-click-target.mjs`.
 
 ### One-shot eval / trusted click / screenshot - `scripts/cdp-eval.mjs`
 
@@ -216,6 +219,7 @@ per call, exits immediately (~70 ms).
 node cdp-eval.mjs <port> '<expr>' [--url <substr>]            # prints the value
 node cdp-eval.mjs <port> --click '<expr returning Element>'   # trusted click at its centre (brings page to front first)
 node cdp-eval.mjs <port> --shot /path.png                     # Page.captureScreenshot
+node cdp-eval.mjs <port> - --target <id> < expression.js       # JS via stdin
 ```
 
 Gotchas learned the hard way: a `setTimeout` safety timer must be
@@ -231,6 +235,12 @@ exists; it never falls back to a different page. Callers must check the
 exit status and stop on bridge failures. A missing target otherwise lets
 parallel drivers navigate or click each other's windows. Check with
 `node scripts/test-cdp-target.mjs`.
+
+Use stdin for expressions containing sensitive values or large payloads,
+so they do not appear in process arguments. The bridge drains stdout before
+exiting; an immediate process.exit can truncate a large result at a pipe
+buffer boundary. Live smoke check:
+`node scripts/test-cdp-output.mjs <port> <targetId>`.
 
 ### Capturing traffic - `scripts/cdp-sniff.mjs`
 
