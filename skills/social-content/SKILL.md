@@ -41,6 +41,27 @@ customer, or a single example into a general conclusion. Preserve ownership,
 conditions, sample sizes, and uncertainty. First-person experiences must
 belong to the author. A hypothetical stays labeled as such.
 
+## Research before choosing angles
+
+For new post ideas, viral angles, campaigns, or content strategy, research
+what is working now before proposing options. Use available browsing,
+search, or read access to inspect original posts from the target audience,
+relevant creators, and competitors. Read the [virality research workflow](references/virality.md).
+Check recent strong performers, ordinary comparisons, emerging discussions,
+and comments for unmet needs. Prioritize relevance to this audience over
+unrelated global trends; study topics and payoffs as well as wording.
+
+Reuse sufficiently current supplied research instead of repeating it. A
+narrow rewrite or copyedit does not need a fresh trend survey. Respect an
+instruction not to browse. If current sources are unavailable, say so and
+label ideas provisional; never invent trends, examples, metrics, or research.
+
+For each proposed idea, connect an observed example or audience need to the
+author's original contribution and a truthful hook. Include a compact source
+link or supplied identifier and explain why it is relevant. Separate
+repeated patterns from emerging hypotheses; neither guarantees virality.
+For copy-only requests, keep these notes outside the public copy.
+
 ## Write and review
 
 1. Find the reader's reason to care: a specific problem, useful result,
