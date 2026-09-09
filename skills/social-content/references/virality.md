@@ -22,12 +22,37 @@ Research on emotional arousal and sharing motivates some of these lenses.
 It does not establish a platform-independent recipe or a probability that
 a particular draft will spread. See [sources](sources.md).
 
-## Reverse-engineer without copying
+## Research current demand and competitors
 
-Use accessible originals and available metrics. Start with a manageable
-sample, including ordinary and weak posts, then expand if the question
-requires it. Record the community, format, topic, age at observation,
-visible results, title, opening, payoff, and relevant incentives.
+Before original ideation, establish the niche, destination, audience, and
+goal from the brief. Then inspect accessible originals, not just a tool's
+trend summary or search snippets:
+
+1. Search recent discussions about the problem and adjacent topics. Look
+   for recurring questions, new developments, and what people want explained.
+2. Inspect relevant competitors and peer creators serving the same audience.
+   Include community contributors when there are no direct competitors.
+   Read their successful recent posts AND ordinary or weak comparisons.
+3. Read comments and the full content. Identify the promise, actual payoff,
+   evidence, objections, unanswered questions, and requests for follow-ups.
+4. Record the source URL or supplied identifier, publication and observation
+   dates when known, community, topic, format, visible metrics, and incentives.
+   Do not invent missing data or describe old examples as currently trending.
+5. Turn the findings into a few options: observed demand + the author's own
+   contribution + a truthful hook. Attach the relevant sources and a short
+   reason to each option. Adapt useful patterns without copying another
+   creator's wording, experiences, or unsupported claims.
+
+Start with a manageable sample and expand only when needed. Choose a recent
+window appropriate to the niche and its pace; record that window. Distinguish
+an emerging discussion from repeated demand and an older enduring pattern.
+One new post is a lead to investigate, not proof of a trend. Check whether
+similar posts already answer the question; a new contribution needs a reason
+to exist. Use vendor trend or outlier scores to find examples, not as proof
+that an angle works. If supplied research is sufficient, use it; if access
+is missing, disclose the gap and offer provisional angles.
+
+## Compare performance without overclaiming
 
 Compare like with like: similar audiences, formats, topics, and observation
 windows. A six-month giveaway and a thirty-minute tutorial are not useful

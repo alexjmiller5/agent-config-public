@@ -23,6 +23,16 @@ rewriting a news or article submission. Capture required title conventions,
 post type/flair, promotion and AI rules, and any appropriate megathread.
 Look at ordinary posts and comments as well as high-scoring examples.
 
+For new ideas or a posting strategy, apply the shared research workflow
+before choosing hooks. Inspect recent top posts and current discussions in
+the target subreddit, using available time filters and hot/new views. Search
+the same problem, competing products, and relevant creators; read comments
+for recurring questions and gaps. Include ordinary comparable posts so a
+giveaway or old outlier does not define the strategy. Ground each idea in
+specific observed examples, explain the author's fresh contribution, and
+include source links or supplied identifiers outside the draft. Use current
+supplied research when sufficient; do not repeat the same research pass.
+
 Use the [playbook](references/playbook.md) for community research, selecting
 a format, drafting, and reviewing performance. This skill teaches content
 judgment; it does not install a Reddit client or imply access to an account.
