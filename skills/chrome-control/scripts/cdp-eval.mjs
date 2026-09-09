@@ -26,10 +26,9 @@ if (newWin) {   // open a NEW WINDOW (not a tab) and print its targetId - one wi
   bws.close(); process.stdout.write(tid); process.exit(0);
 }
 const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-const t = (targetId ? list.find(x => x.id === targetId) : null)
-       || list.find(x => x.type === 'page' && (!want || x.url.includes(want)) && !x.url.startsWith('chrome'))
-       || list.find(x => x.type === 'page' && !x.url.startsWith('chrome-extension'));
-if (!t) { console.error('no page target'); process.exit(1); }
+const t = targetId ? list.find(x => x.id === targetId && x.type === 'page')
+  : list.find(x => x.type === 'page' && (!want || x.url.includes(want)) && !x.url.startsWith('chrome'));
+if (!t) { console.error(targetId ? 'target not found: ' + targetId : 'no matching page target'); process.exit(1); }
 const ws = new WebSocket(t.webSocketDebuggerUrl);
 let nextId = 0; const pending = new Map();
 const send = (method, params) => new Promise((res, rej) => { const id = ++nextId; pending.set(id, { res, rej }); ws.send(JSON.stringify({ id, method, params })); });

@@ -226,6 +226,12 @@ remote display awake and launch Chrome with backgrounding disabled
 (`--disable-backgrounding-occluded-windows --disable-renderer-backgrounding
 --disable-features=CalculateNativeWinOcclusion`).
 
+**Explicit targets are strict.** `--target` fails if that page no longer
+exists; it never falls back to a different page. Callers must check the
+exit status and stop on bridge failures. A missing target otherwise lets
+parallel drivers navigate or click each other's windows. Check with
+`node scripts/test-cdp-target.mjs`.
+
 ### Capturing traffic - `scripts/cdp-sniff.mjs`
 
 The passive sniffer. Attaches to open tabs and streams XHR/fetch as NDJSON
