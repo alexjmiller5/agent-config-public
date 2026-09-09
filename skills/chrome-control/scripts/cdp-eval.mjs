@@ -8,6 +8,7 @@
 //       -> scrolls it into view and sends a TRUSTED mouse click at its centre (Input.dispatchMouseEvent);
 //          prints the click point. Use for controls that ignore synthetic .click() (Chrome 152+ Maps picker rows).
 // Zero deps (Node 22+ WebSocket). One connection per call - no approval dialog on a dedicated profile.
+import { clickElement } from './click-target.mjs';
 const argv = process.argv.slice(2);
 const port = argv[0];
 const clickMode = argv.includes('--click');
@@ -40,12 +41,11 @@ const done = (async () => {
   if (shotPath) { const { data } = await send('Page.captureScreenshot', { format: 'png' }); (await import('node:fs')).writeFileSync(shotPath, Buffer.from(data, 'base64')); return { result: { value: 'shot ' + shotPath } }; }
   if (!clickMode) return send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
   await send('Page.bringToFront', {}).catch(() => {}); await send('Emulation.setFocusEmulationEnabled', { enabled: true }).catch(() => {});
-  const r = await send('Runtime.evaluate', { expression: `(()=>{const el=(${expr}); if(!el) return null; el.scrollIntoView({block:'center'}); const b=el.getBoundingClientRect(); return {x:b.x+b.width/2,y:b.y+b.height/2}})()`, returnByValue: true });
-  const c = r.result.value; if (!c) return { result: { value: 'ELEMENT NOT FOUND' } };
-  await new Promise(r => setTimeout(r, 150));
-  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: c.x, y: c.y });
-  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: c.x, y: c.y, button: 'left', clickCount: 1 });
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: c.x, y: c.y, button: 'left', clickCount: 1 });
+  const c = await clickElement(send, async expression => {
+    const r = await send('Runtime.evaluate', { expression, returnByValue: true });
+    if (r.exceptionDetails) throw Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
+    return r.result.value;
+  }, expr);
   return { result: { value: `clicked@${Math.round(c.x)},${Math.round(c.y)}` } };
 })();
 try { const r = await done; if (r.exceptionDetails) { console.error(r.exceptionDetails.text); process.exit(2); } const v = r.result.value; process.stdout.write(typeof v === 'string' ? v : JSON.stringify(v ?? '')); process.exit(0); }

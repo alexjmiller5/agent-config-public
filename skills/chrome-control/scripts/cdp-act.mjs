@@ -22,6 +22,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { clickElement } from './click-target.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.startsWith('--') ? [a.slice(2), all[i + 1] ?? true] : []).filter(Boolean));
 let wsUrl;   // --port N: a dedicated-profile Chrome (Tier 3/4) - no port file, no Allow sheet
@@ -69,16 +70,10 @@ ws.onopen = async () => {
     }
   });
   const ev = async (expr) => { const r = await S('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.text + ' ' + (r.exceptionDetails.exception?.description ?? '')); return r.result.value; };
-  const center = async (expr) => ev(`(()=>{const el=(${expr}); if(!el) return null; el.scrollIntoView({block:'center'}); const r=el.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,w:r.width,h:r.height}})()`);
-  const click = async ({ x, y }) => {
-    await S('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-    await S('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-    await S('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-  };
   const KEYS = { Enter: { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' }, Escape: { key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, Tab: { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 } };
   const run = async (i, st) => {
       if (st.eval !== undefined) out({ step: i, eval: await ev(st.eval) });
-      else if (st.click !== undefined) { const c = await center(st.click); if (!c) { out({ step: i, click: 'ELEMENT NOT FOUND' }); return; } await sleep(150); await click(c); out({ step: i, clicked: c }); }
+      else if (st.click !== undefined) { const c = await clickElement(S, ev, st.click); out({ step: i, clicked: c }); }
       else if (st.type !== undefined) { await S('Input.insertText', { text: st.type }); out({ step: i, typed: st.type.length }); }
       else if (st.key !== undefined) { const k = KEYS[st.key]; await S('Input.dispatchKeyEvent', { type: 'keyDown', ...k }); await S('Input.dispatchKeyEvent', { type: 'keyUp', ...k }); out({ step: i, key: st.key }); }
       else if (st.keys !== undefined) { for (const ch of st.keys) { const vk = ch.toUpperCase().charCodeAt(0); await S('Input.dispatchKeyEvent', { type: 'keyDown', key: ch, windowsVirtualKeyCode: vk }); await S('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch }); await S('Input.dispatchKeyEvent', { type: 'keyUp', key: ch, windowsVirtualKeyCode: vk }); await sleep(25); } out({ step: i, keys: st.keys.length }); }
