@@ -23,6 +23,11 @@ ln -s ~/.config/agent-config-public/skills/* ~/.claude/skills/
 Some skills reference private companion skills by name (workspace maps,
 machine specifics) - they degrade gracefully when those don't exist.
 
+For social writing, `social-content` holds the shared guidance on hooks,
+virality, video scripts, and marketing. `reddit` adds subreddit research,
+titles, posts, comments, and community conventions. Install both together;
+the platform skill loads only the shared references needed for the task.
+
 ## Contributing personal-info-free
 
 Nothing personal ever goes in this repo: no names, emails, phone numbers,
