@@ -1,9 +1,11 @@
 export async function clickElement(send, evaluate, expression, delay = 150) {
-  await evaluate(`(()=>{const el=(${expression});if(!el)throw Error('Element not found');el.scrollIntoView({block:'center',behavior:'instant'});return true})()`);
+  const scroll = `(()=>{const el=(${expression});if(!el)throw Error('Element not found');el.scrollIntoView({block:'center',behavior:'instant'});return true})()`;
+  await evaluate(scroll);
   let point, previous, stable = 0;
   for (let i = 0; i < 12; i++) {
     await new Promise(resolve => setTimeout(resolve, delay));
-    point = await evaluate(`(()=>{const el=(${expression});if(!el)throw Error('Element disappeared');const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);return {x,y,w:r.width,h:r.height,hit:!!hit&&(hit===el||el.contains(hit))}})()`);
+    point = await evaluate(`(()=>{const el=(${expression});if(!el)throw Error('Element disappeared');const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);return {x,y,w:r.width,h:r.height,outside:x<0||y<0||x>=innerWidth||y>=innerHeight,hit:!!hit&&(hit===el||el.contains(hit))}})()`);
+    if (point.outside) { await evaluate(scroll); previous = undefined; stable = 0; continue; }
     stable = point.hit && point.w > 0 && point.h > 0 && previous &&
       Math.abs(point.x-previous.x)<0.5 && Math.abs(point.y-previous.y)<0.5 ? stable+1 : 0;
     if (stable >= 2) break;

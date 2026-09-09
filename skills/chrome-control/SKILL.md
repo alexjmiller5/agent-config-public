@@ -209,6 +209,8 @@ before sending input. A layout can move after scrollIntoView; an old
 coordinate can activate a neighboring control. Select the clickable
 ancestor when a label has pointer-events disabled. Obscured targets fail
 without sending a click. Check with `node scripts/test-click-target.mjs`.
+If loading inserts rows above the target and pushes it outside the
+viewport, the helper scrolls it into view again within the bounded wait.
 
 ### One-shot eval / trusted click / screenshot - `scripts/cdp-eval.mjs`
 
