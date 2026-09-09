@@ -9,13 +9,15 @@
 //          prints the click point. Use for controls that ignore synthetic .click() (Chrome 152+ Maps picker rows).
 // Zero deps (Node 22+ WebSocket). One connection per call - no approval dialog on a dedicated profile.
 import { clickElement } from './click-target.mjs';
+import { readFileSync } from 'node:fs';
 const argv = process.argv.slice(2);
 const port = argv[0];
 const clickMode = argv.includes('--click');
 const shotPath = argv.includes('--shot') ? argv[argv.indexOf('--shot') + 1] : null;
 const targetId = argv.includes('--target') ? argv[argv.indexOf('--target') + 1] : null;
 const newWin = argv.includes('--new-window') ? argv[argv.indexOf('--new-window') + 1] : null;
-const expr = clickMode ? argv[argv.indexOf('--click') + 1] : ((shotPath || newWin) ? '1' : argv[1]);
+const expressionArg = clickMode ? argv[argv.indexOf('--click') + 1] : ((shotPath || newWin) ? '1' : argv[1]);
+const expr = expressionArg === '-' ? readFileSync(0, 'utf8') : expressionArg;
 const rest = argv.slice(1);
 const want = rest.includes('--url') ? rest[rest.indexOf('--url') + 1] : null;
 if (newWin) {   // open a NEW WINDOW (not a tab) and print its targetId - one window per parallel driver
@@ -48,5 +50,5 @@ const done = (async () => {
   }, expr);
   return { result: { value: `clicked@${Math.round(c.x)},${Math.round(c.y)}` } };
 })();
-try { const r = await done; if (r.exceptionDetails) { console.error(r.exceptionDetails.text); process.exit(2); } const v = r.result.value; process.stdout.write(typeof v === 'string' ? v : JSON.stringify(v ?? '')); process.exit(0); }
+try { const r = await done; if (r.exceptionDetails) { console.error(r.exceptionDetails.text); process.exit(2); } const v = r.result.value; process.stdout.write(typeof v === 'string' ? v : JSON.stringify(v ?? ''), () => process.exit(0)); }
 catch (e) { console.error(String(e)); process.exit(1); }
