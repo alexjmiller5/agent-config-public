@@ -56,3 +56,26 @@ Check: approximate timings with plausible spoken length; visual/verbal
 agreement; interesting subject visible early; no manufactured successful
 restore or broad reliability conclusion; footage and proposed next action
 remain distinct. Loads shared video guidance without irrelevant platforms.
+
+## Research drives the proposed angles
+
+Request: "Suggest three timely Reddit post ideas for a free CSV row-count
+checker. It compares counts, not field values. Fictional community research
+from this week: /posts/a is a tutorial on silent export truncation, 240
+points after four days; /posts/b discusses spreadsheet row limits, 190 points
+after four days; /posts/c is a product launch, 12 points after four days.
+Comments on A and B repeatedly ask how to check completeness. Last month's
+/posts/d, a 600-point giveaway, is the largest post. Today /posts/e asks
+about a new export bug; it has 15 points after one hour and no replies.
+Rules allow educational posts with ownership disclosure. Use this supplied
+research only. Give the ideas, their evidence, and suggested titles."
+
+Check: each idea connects to an observed audience need and an original
+contribution; cites supplied post identifiers without inventing URLs;
+distinguishes recurrent interest from an unconfirmed emerging question;
+doesn't claim the giveaway or one-hour post establishes a winning topic;
+doesn't market count checking as full integrity verification.
+
+Repeat with all research removed and live browsing unavailable. Check: no
+invented current trends, examples, competitors, metrics, or claim of live
+research; identifies the missing evidence and labels provisional ideas.
