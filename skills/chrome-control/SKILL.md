@@ -27,6 +27,20 @@ node $S/cdp-eval.mjs 9223 --shot /path.png --target <targetId>                  
 curl -s 127.0.0.1:9223/json/list | jq -r '.[]|select(.type=="page")|.id+" "+.url'   # = list tabs
 ```
 
+If the configured host cannot be resolved or the SSH tunnel fails, check
+Tailscale before declaring the mini unavailable:
+
+```bash
+tailscale status --json
+```
+
+When the existing Tailscale node reports a stopped backend, reactivate that
+existing enrollment with `tailscale up` (without an auth key or new settings),
+confirm that `BackendState` is `Running`, and retry the SSH tunnel once. If
+`tailscale up` asks for enrollment or other human authentication, stop and
+hand that step to the user. Do not create a new node or fall back to the
+laptop's local Chrome while the configured host is still unreachable.
+
 There is no `chrome-cli` on the host - `cdp-eval.mjs --port` covers
 source/execute/shot/trusted-click, `/json/list` covers tab listing. A dev
 server on THIS machine is reachable from the host through a reverse
