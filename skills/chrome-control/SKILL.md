@@ -27,18 +27,22 @@ node $S/cdp-eval.mjs 9223 --shot /path.png --target <targetId>                  
 curl -s 127.0.0.1:9223/json/list | jq -r '.[]|select(.type=="page")|.id+" "+.url'   # = list tabs
 ```
 
-If the configured host cannot be resolved or the SSH tunnel fails, check
-Tailscale before declaring the mini unavailable:
+If the configured host cannot be resolved or the SSH tunnel fails, diagnose
+connectivity before declaring the mini unavailable:
 
 ```bash
+H="$CHROME_CONTROL_HOST"
 tailscale status --json
+ssh -G "$H" | rg '^hostname '
+tailscale ping --c 1 --timeout 5s <resolved-hostname>
 ```
 
-When the existing Tailscale node reports a stopped backend, reactivate that
-existing enrollment with `tailscale up` (without an auth key or new settings),
-confirm that `BackendState` is `Running`, and retry the SSH tunnel once. If
-`tailscale up` asks for enrollment or other human authentication, stop and
-hand that step to the user. Do not create a new node or fall back to the
+If the local Tailscale client is stopped or logged out, reconnect its existing
+enrollment through its native UI or CLI, confirm `BackendState` is `Running`,
+and retry the SSH tunnel once. Do not mint or reuse auth keys, change ACLs,
+install or reconfigure Tailscale, or mutate the remote host from this skill.
+If re-enrollment or other human authentication is required, stop and follow
+the machine's documented recovery procedure. Do not fall back to the
 laptop's local Chrome while the configured host is still unreachable.
 
 There is no `chrome-cli` on the host - `cdp-eval.mjs --port` covers
