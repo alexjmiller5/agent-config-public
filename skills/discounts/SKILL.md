@@ -1,6 +1,6 @@
 ---
 name: discounts
-description: Use when the user is about to buy something and wants it cheaper - "find a discount", "promo code for X", "any deals on this", "can I get this cheaper", "student discount", "price check" - or when they link/name an item they found and want the best legitimate price before purchasing. Also for TICKETS - concerts, shows, sports, festivals, club nights - comparing SeatGeek/TickPick/StubHub/RA/Posh/CrowdVolt/Ticketmaster and finding presale or promoter codes.
+description: Use when the user is about to buy something and wants it cheaper - "find a discount", "promo code for X", "any deals on this", "can I get this cheaper", "student discount", "price check" - or when they link/name an item they found and want the best legitimate price before purchasing. Sweep relevant new, open-box, refurbished, used, and local markets, including Amazon, eBay, Facebook Marketplace, Poshmark, Depop, Mercari, Vinted, OfferUp, Craigslist, and category-specific marketplaces. Also for TICKETS - concerts, shows, sports, festivals, club nights - comparing SeatGeek/TickPick/StubHub/RA/Posh/CrowdVolt/Ticketmaster and finding presale or promoter codes.
 ---
 
 # Discounts
@@ -21,20 +21,39 @@ Given something the user wants to buy (link or name), find the cheapest legitima
 
 ## Workflow
 
-1. **Pin down exactly what's being bought**: brand, model, size/color/config, and the reference price (brand site + Amazon, effective = item + shipping + tax). Every option is measured against the cheapest mainstream new price. For tickets, see the Tickets section - the unit and the reference price work differently.
+1. **Pin down exactly what's being bought**: brand, model, size/color/config, condition ceiling (new, open-box, used, or any), delivery deadline or pickup radius, and the reference price (brand site + Amazon, effective = item + shipping + tax). Every option is measured against the cheapest mainstream new price. For tickets, see the Tickets section - the unit and the reference price work differently.
 
 2. **Sweep channels** (parallel subagents where independent). **Every sub-researcher gets the "blocked is not absent" rule in its prompt, and is told to report raw outcomes - "403", "captcha", "empty result" - and NEVER to conclude a platform lacks the item.** A subagent's "X does not appear to list this event" is not a finding; treat it as unchecked and open X yourself.
    * **Promo codes**: web search `"<brand> promo code" 2026`, RetailMeNot, Slickdeals threads, `site:reddit.com <brand> promo OR discount code` (brand subreddit, r/frugal, r/deals).
    * **Student / affinity discounts**: search `<brand> student discount`; check StudentBeans, UNiDAYS, id.me (student / military / nurse / first-responder), SheerID-gated brand pages. the user has saved logins in Chrome for these - use them to browse the gated offer and reveal the actual code; ask them to log in if you hit a wall. If the code can't be revealed, report availability + percentage as unverified.
-   * **Cross-listings at other retailers**: Amazon (check camelcamelcamel/Keepa price history), then the category table below. Exact same SKU only.
+   * **Cross-listings at other retailers**: Amazon new (the retail benchmark), Amazon Warehouse/Used, then the category table below. Check camelcamelcamel/Keepa price history where available. Exact same SKU or an explicitly equivalent configuration only.
    * **Brand's own cheaper channels**: site sale/outlet section, official brand eBay outlet store (many brands run one), refurb page.
-   * **Second-hand marketplaces**: eBay, Poshmark, Depop, Mercari, Grailed, Vinted (whichever fit the category), NWT/NWB preferred. Vet per legitimacy rules below.
+   * **Second-hand marketplaces**: use the core and category-specific sweep below. Search eBay, Facebook Marketplace, OfferUp, Craigslist, Mercari, Poshmark, Depop, Vinted, Grailed, and Nextdoor where they plausibly carry the item. NWT/NWB or clearly described used condition is preferred. Vet per legitimacy rules below.
+   * **Open-box and refurbished channels**: manufacturer refurb/outlet, Best Buy Open Box, Back Market, Woot, Walmart Restored, Newegg Refurbished, and Swappa for eligible electronics.
    * **Socials**: the brand's (or artist's/venue's) Instagram - bio link, recent posts, story highlights - plus their email list. Codes live there that never reach coupon sites.
    * **Cashback layers**: Rakuten / Capital One Shopping rates - report as "stackable \~X% cashback", don't sign up.
 
 3. **Verify**: run the checkout protocol on every option you intend to report - each surviving code AND each vendor whose price you plan to rank. An option nobody drove to the payment screen cannot hold the top spot.
 
 4. **Report** in-chat (format below). While sweeping, capture anything worth knowing about the thing itself - recalls, common defects, an imminent new model, seasonal price drops, a clearly better alternative at the same price.
+
+## Physical-goods marketplace sweep
+
+For physical goods, "search everywhere" means checking every relevant channel below, not blindly opening unrelated marketplaces. When the user asks for a broad search, do not stop at the first cheap listing: sweep the core rows and the category rows that plausibly carry the item. Search each platform's own UI in Chrome so hidden or local inventory is not mistaken for no inventory. Use the saved delivery location when available; record shipping, taxes, pickup distance, and arrival date separately.
+
+| Channel | Check |
+| --- | --- |
+| New retail benchmark | Brand site, Amazon new from Amazon/brand or a reputable seller, Walmart, Target, Costco, Google Shopping, and the category's specialist retailers. Do not use Amazon Warehouse, Used, or a random third-party offer as the retail benchmark. |
+| Large resale markets | eBay, Facebook Marketplace, OfferUp, Craigslist, Mercari, Poshmark, Depop, Vinted, Grailed, Nextdoor |
+| Open-box/refurbished | Amazon Warehouse/Used, manufacturer refurb, Best Buy Open Box, Back Market, Woot, Walmart Restored, Newegg Refurbished, Swappa |
+| Bikes, sports, and outdoor gear | Pinkbike BuySell, SidelineSwap, Geartrade, REI Used Gear, Play It Again Sports, local bike or sporting-goods shops |
+| Apparel and luxury | The RealReal, Vestiaire Collective, ThredUp, Kidizen, Grailed, Poshmark, Depop, Vinted |
+| Music gear | Reverb, Guitar Center Used, eBay, Facebook Marketplace, Craigslist |
+| Collectibles and specialty goods | Whatnot, Etsy vintage, ShopGoodwill, GoodwillFinds, HiBid, Mercari, eBay, and the item's specialist marketplace |
+
+Search the exact model or part number plus size, color, generation, and compatibility terms. Retry with common abbreviations, misspellings, and bundled or unbundled versions. For local listings, include distance and pickup timing and do not message, negotiate, or arrange a meeting unless the user explicitly asks.
+
+Keep new, open-box/refurbished, shipped used, and local pickup as separate comparison rows. A local listing with no cart cannot have a verified all-in total; mark its posted price and availability as **unverified** even when the listing is real.
 
 ## Vendors that often beat the brand site
 
@@ -98,7 +117,7 @@ Physical goods only - tickets use the platform test in the Tickets section.
 
 **Omit entirely**: <40% of new on counterfeit-prone goods (assume branded apparel, shoes, electronics + accessories, and fragrance are counterfeit-prone), seller <95% or "not as described" pattern, off-platform payment requests, photo/spec mismatches, non-canonical domains (typosquat "outlet" sites), and every off-platform ticket sale.
 
-**Needs human review** (own section in the report): everything in between - listings that don't fully qualify for "show normally" but don't hit an omit criterion. Typical cases: seller in the 95-98% band or with few ratings, stock photos only, vague condition, unexplained 40-60%-of-new price, weak-protection platform (Facebook Marketplace, Craigslist).
+**Needs human review** (own section in the report): everything in between - listings that don't fully qualify for "show normally" but don't hit an omit criterion. Typical cases: seller in the 95-98% band or with few ratings, stock photos only, vague condition, unexplained 40-60%-of-new price, weak-protection platform (Facebook Marketplace, Craigslist, OfferUp, Nextdoor), or a local listing with no platform checkout.
 
 ## Checkout verification protocol
 
@@ -115,6 +134,8 @@ Run this for EVERY option you report, not just ones with a code.
 6. Label: **VERIFIED** (total seen on the payment screen) / **unverified** (gated by login, signup,
    student verification, or app-only checkout - say which) / discarded (code failed in cart).
 7. Abandon the cart before opening the next one - checkouts are serialized.
+
+For Facebook Marketplace, Craigslist, OfferUp, Nextdoor, and other listings without a checkout, capture the listing price, condition, seller evidence, shipping or pickup terms, and availability, then label the result **unverified**. Never contact the seller or arrange payment on the user's behalf.
 
 ## Report format
 
@@ -135,4 +156,3 @@ Needs human review: marketplace finds + link + what to check
 Worth knowing: product intel, or for tickets the price trend + whether to wait
 Checked: platforms confirmed in-browser, and separately any that were blocked/unchecked
 ```
-
