@@ -67,13 +67,17 @@ G=~/.claude/skills/chrome-control/scripts/cdp-group.mjs   # add --port 9223 on t
 node $G "claude: <task>" https://a.com https://b.com   # first call creates window + group, later calls add tabs to it
 # -> window=<id> group=<id> tabs=<id,...> targets=<targetId,...>   tabs = Chrome/chrome-cli tab ids, targets = CDP ids, same order
 node $G "claude: <task>"                                # no urls: sweep strays in the session window into the group
-node $G "claude: <task>" --close                        # end of task: closes the whole session window
+node $G "claude: <task>" --close                        # end of task: deletes the group, then closes its window and tabs
 ```
 
 The name is `claude: <short task>`, the same string on every call. One
 window per session is the rule; parallel drivers that genuinely need a
 window each (several Maps windows at once) use one name per driver - that
 is the only reason to have more than one.
+
+**Group cleanup is part of finishing the task.** Keep every group name you
+create and run `--close` for each before your final response, including when
+a browser attempt fails or is abandoned. Follow "Close what you open" below.
 
 How it works: CDP has no tab-group API, so the script opens a hidden
 target on an installed extension's origin and calls `chrome.tabs` /
@@ -467,16 +471,25 @@ the Chrome / tool version you observed it on, add to Gotchas only if it will
 bite again, and state **current behaviour only** - no changelogs, no dated
 notes. Tell the user what changed, in chat. Same bar applies to `web-recon`.
 
-## Close what you open (MANDATORY)
+## Remove your groups and close what you open (MANDATORY)
 
-Every tab or window you create is yours to close - the user otherwise inherits
-a browser full of leftovers from every agent session. Before ending the task
-(and before answering any "done" message), close everything you opened:
+Every group, tab and window you create is yours to clean up. Before ending
+the task (and before answering any "done" message), remove the session's
+groups completely, including their saved entries, and close everything you
+opened. This also applies to failed or abandoned browser work.
 
-- The session window: `cdp-group.mjs "<name>" --close` (add `--port` on the
-  agent host) - one call takes every tab of the session with it, strays
-  included. This is the normal case; the rest are for tabs opened some
-  other way.
+- Each session group: `cdp-group.mjs "<name>" --close` (use the same `--port`
+  and `--ext` as creation). It ungroups the group's tabs first, deleting the
+  saved group, then closes the session window, including stray tabs.
+  **Closing the window alone leaves a saved group behind in Chrome 152.**
+  Collapsing, hiding or unpinning a group does not remove it either.
+  Check the command's exit status; a cleanup error is unfinished work.
+  If ungrouping succeeds but window closure fails, close the tracked window
+  by its id; a retry can no longer find it by group name.
+  `closed=false` only means no open group matched, not that a saved entry
+  was deleted. If the window was already closed and its saved group remains,
+  use Chrome's saved-groups menu to **Delete group** for that exact session.
+  Never bulk-delete other sessions' groups by prefix or apparent age.
 - `chrome-cli open` prints `Id: <tab>` / `Window id: <win>` - keep them and
   run `chrome-cli close -t <id>` (or `close -w <win>` for an `open -n` window)
   when finished with it. A tab you navigated but did not create stays open.
@@ -486,9 +499,14 @@ a browser full of leftovers from every agent session. Before ending the task
 - CDP scripts (`cdp-act.mjs` / `cdp-sniff.mjs`) → `{"quit":true}` / let the
   capture window end, then close any tab you opened for them.
 
-Track ids as you go; do not rely on a tab listing at the end to guess which
-were yours. Leaving a tab open is only acceptable when the user asked to see
-it, and then say so in chat.
+Track names and ids as you go; do not rely on a tab listing at the end to
+guess which were yours. In scripted drivers, put cleanup in `finally` or an
+exit trap. Verify your session windows and groups are gone; absence from
+`/json/list` alone does not prove a saved group was deleted. Live regression
+check: `node scripts/test-cdp-group.mjs <port>`.
+
+Leaving a group or tab open is only acceptable when the user explicitly
+asked to keep it, and then identify what remains in chat.
 
 ## Human handoff
 

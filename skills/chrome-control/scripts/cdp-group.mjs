@@ -3,7 +3,7 @@
 //   node cdp-group.mjs "<group name>" [url ...]   -> window=<id> group=<id> tabs=<id,...> targets=<id,...>
 //       tabs = Chrome tab ids of the tabs THIS call opened (what chrome-cli prints/accepts); targets = their CDP
 //       targetIds in the same order (for cdp-eval.mjs --target); both empty when no url was given
-//   node cdp-group.mjs "<group name>" --close     -> closes the whole session window
+//   node cdp-group.mjs "<group name>" --close     -> removes the group, then closes the whole session window
 //   --port N   drive a dedicated-profile Chrome (Tier 3/4) instead of the real one (Tier 2, DevToolsActivePort + Allow sheet)
 //   --ext ID   extension to borrow the tabGroups API from (default: Claude in Chrome); the profile must have it installed
 //   --color C  grey|blue|red|yellow|green|pink|purple|cyan|orange (default: derived from the name)
@@ -39,7 +39,15 @@ setTimeout(() => { console.error('timeout (Allow sheet not approved?)'); process
 // Runs inside the extension origin. groupId -1 = chrome.tabGroups.TAB_GROUP_ID_NONE (ungrouped).
 const body = async ({ name, color, urls, close }) => {
   let g = (await chrome.tabGroups.query({ title: name }))[0];
-  if (close) { if (g) await chrome.windows.remove(g.windowId); return { closed: !!g }; }
+  if (close) {
+    if (g) {
+      // Closing a window preserves its saved group; ungroup first to delete it.
+      const tabs = await chrome.tabs.query({ groupId: g.id });
+      await chrome.tabs.ungroup(tabs.map(t => t.id));
+      await chrome.windows.remove(g.windowId);
+    }
+    return { closed: !!g };
+  }
   const opened = [];
   if (!g) {
     const w = await chrome.windows.create({ url: urls.shift() ?? 'about:blank', focused: false });
