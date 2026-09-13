@@ -60,26 +60,24 @@ try {
     chrome.tabs.onUpdated.addListener((id, change) => {
       if (change.groupId === -1) globalThis.ungrouped.push(id);
     });`);
-  await evaluate(extension, `chrome.tabs.create({windowId:${windowId},url:'about:blank',active:false})`);
+  const strayId = await evaluate(extension, `chrome.tabs.create({windowId:${windowId},url:'about:blank',active:false}).then(t=>t.id)`);
   for (let i = 0; i < 50 && await saved() === false; i++) await new Promise(resolve => setTimeout(resolve, 100));
   const savedBefore = await saved();
   if (savedBefore !== null) assert.equal(savedBefore, true, 'Test must exercise an automatically saved group');
   const closed = await run(process.execPath, [script, name, '--close', '--port', port]);
   assert.match(closed.stdout, /closed=true/);
   const ungrouped = await evaluate(extension, 'globalThis.ungrouped');
-  assert.ok(tabIds.every(id => ungrouped.includes(id)), 'Group must be dissolved before its window is closed');
+  assert.ok(tabIds.every(id => ungrouped.includes(id)), 'Group must be dissolved before its member tabs are closed');
   if (savedBefore !== null) assert.equal(await saved(), false, `Saved group survived --close: ${name}`);
-  let after;
-  for (let i = 0; i < 50; i++) {
-    after = await evaluate(extension, 'chrome.windows.getAll().then(w => w.map(x => x.id))');
-    if (!after.includes(windowId)) break;
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  assert.ok(!after.includes(windowId), 'Session window and stray tab must be closed');
+  const after = await evaluate(extension, 'chrome.windows.getAll().then(w => w.map(x => x.id))');
+  const remaining = await evaluate(extension, `chrome.tabs.query({windowId:${windowId}}).then(ts=>ts.map(t=>t.id))`);
+  assert.ok(tabIds.every(id=>!remaining.includes(id)), 'Exact session members must be closed');
+  assert.ok(remaining.includes(strayId), 'Ungrouped tab must survive because its ownership is not established');
+  assert.ok(after.includes(windowId), 'Window with an ungrouped tab must remain open');
   assert.ok(after.includes(observerWindow), 'Unrelated session window must stay open');
   const again = await run(process.execPath, [script, name, '--close', '--port', port]);
   assert.match(again.stdout, /closed=false/);
-  console.log(`${version.Browser}: group dissolved, session tabs and stray removed; unrelated windows preserved; repeat close is harmless`);
+  console.log(`${version.Browser}: group dissolved, exact session tabs removed; ungrouped tab and unrelated windows preserved; repeat close is harmless`);
   console.log(savedBefore === null ? 'Saved-group sync inspection unavailable in this profile' : 'Saved group deletion verified');
 } finally {
   for (const ownedWindow of [windowId, observerWindow].filter(Boolean)) if (extension) await evaluate(extension, `(async () => {
