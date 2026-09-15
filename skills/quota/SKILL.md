@@ -38,9 +38,15 @@ mints tokens. `quota-axi --help` is the syntax authority over this file.
   `quota-axi --allow-keychain-prompt` once and clicks **Always Allow** - never click
   that dialog for them. The ACL attaches to `/usr/bin/security`, and the grant marker
   is per Claude account, so it survives package rebuilds.
-- A provider whose CLI is installed but not logged in reports `error` / `missing`
-  credential sources (e.g. Codex without `~/.codex/auth.json`) - the fix is the
-  vendor's own login, not quota-axi.
+- **Codex with `cli_auth_credentials_store = "keyring"`** keeps its login in the
+  OS keychain, so `quota-axi auth` shows `auth-json missing` - that is fine as long
+  as `cli-rpc` is `available`: quota is read through `codex app-server`. A
+  `Codex quota unavailable` error with a working `codex login status` means the
+  probe itself broke (Codex >= 0.149 rejects the `-a untrusted` flag upstream still
+  passes; run `codex -s read-only -a never app-server` by hand to confirm, patch the
+  flag at install time until upstream #177 lands).
+- Any other provider that is installed but not logged in reports `error` /
+  `missing` sources - the fix is the vendor's own login, not quota-axi.
 - A plain read may delegate an expired token's refresh to the vendor CLI; pass
   `--no-credential-refresh` when the read must stay strictly read-only.
 - Never run `quota-axi update` on a package-manager install (read-only store) - bump
