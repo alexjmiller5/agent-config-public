@@ -1,6 +1,6 @@
 ---
 name: mac-control
-description: See and drive a Mac's screen from a shell - screenshots, reading the accessibility tree, clicking, typing as a real keyboard, pressing keys, dismissing dialogs - on the local machine or a remote/headless Mac over ssh. Use for ANY native-app or system-dialog automation outside the browser (browser work goes through chrome-control), and whenever a task on a remote Mac needs eyes or hands on its display. Covers the TCC grants that make it possible, which binary macOS blames, headless-display pitfalls, and when to reach for Claude Code's built-in computer use or Peekaboo instead.
+description: See and drive a Mac's screen from a shell - screenshots, accessibility tree, clicking, typing, key presses, dismissing dialogs - locally or on a remote/headless Mac over ssh. Use for ANY native-app or system-dialog automation outside the browser (browser work goes through chrome-control), and whenever a task on a remote Mac needs eyes or hands on its display.
 ---
 
 # Mac Control

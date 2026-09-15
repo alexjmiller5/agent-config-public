@@ -1,6 +1,6 @@
 ---
 name: web-recon
-description: Reverse-engineer a website's structure and its backend APIs - find the undocumented JSON endpoints behind a page, extract the auth it needs, and drive them directly from the shell to get data the UI never renders. Use when the user wants to scrape a site, pull data off a service with no public API, understand how a web app talks to its backend, or asks to "figure out how this site works" / "find the API behind this". Builds on the chrome-control skill for all browser mechanics.
+description: Reverse-engineer a website's backend APIs - find the undocumented JSON endpoints behind a page, extract the auth they need, and drive them from the shell. Use when the user wants to scrape a site, pull data off a service with no public API, understand how a web app talks to its backend, or asks to "figure out how this site works" / "find the API behind this". Builds on chrome-control.
 ---
 
 # Web Recon
