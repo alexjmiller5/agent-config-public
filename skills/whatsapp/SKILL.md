@@ -1,6 +1,6 @@
 ---
 name: whatsapp
-description: Use when a task touches WhatsApp in any way on the user's Mac - reading, searching, or summarizing WhatsApp chats or groups, answering "what did X say on WhatsApp", checking unread WhatsApp messages, listing group members, finding media someone sent, or sending a WhatsApp message to someone - or anything mentioning WhatsApp, "wa", ChatStorage.sqlite, wacli, or a group chat that lives on WhatsApp. Load BEFORE opening the WhatsApp database or automating WhatsApp.app; the live database is WAL-backed and reading it directly misses recent messages.
+description: Use when a task touches WhatsApp in any way on the user's Mac - reading, searching, or summarizing chats or groups, "what did X say on WhatsApp", unread messages, group members, media someone sent, or sending a message - or anything mentioning WhatsApp, "wa", ChatStorage.sqlite, or wacli. Load BEFORE opening the WhatsApp database or automating WhatsApp.app; direct reads miss recent messages.
 ---
 
 # WhatsApp - read and send from the shell (macOS)
