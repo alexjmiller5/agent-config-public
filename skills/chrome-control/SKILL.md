@@ -1,6 +1,6 @@
 ---
 name: chrome-control
-description: ALWAYS invoke FIRST for ANY browser task - anything touching Chrome, a web page, a tab, or a localhost dev server - reading/dumping HTML, listing tabs, injecting or executing JS, clicking through or filling pages, E2E-testing a web UI, capturing network traffic with response bodies, reading cookies or console, screenshots. Drives the shared agent Chrome on the configured host (never the local laptop's), every session in its own window + tab group; the claude-in-chrome MCP tools are a LAST RESORT and this skill says when they're allowed - so it must load before any mcp__claude-in-chrome__* call. Mechanics only; for the reverse-engineering workflow that sits on top, use the web-recon skill.
+description: Invoke FIRST for ANY browser task - anything touching Chrome, a web page, a tab, or a localhost dev server - reading HTML, listing tabs, running JS, clicking or filling pages, E2E-testing a web UI, capturing network traffic, cookies, console, screenshots. Must load before any mcp__claude-in-chrome__* call; the web-recon skill builds on it.
 ---
 
 # Chrome Control
