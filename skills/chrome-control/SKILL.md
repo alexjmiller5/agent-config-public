@@ -27,6 +27,19 @@ node $S/cdp-eval.mjs 9223 --shot /path.png --target <targetId>                  
 curl -s 127.0.0.1:9223/json/list | jq -r '.[]|select(.type=="page")|.id+" "+.url'   # = list tabs
 ```
 
+When `$CHROME_CONTROL_HOST` is the literal `local`, the agent Chrome is on
+this machine at `127.0.0.1:${CHROME_CONTROL_PORT:-9222}`: skip the ssh
+forward, pass that port to every script, and expect no Allow sheet (that
+Chrome runs on its own data dir). Everything else in Tier 4 applies
+unchanged: own window and tab group per session, cleanup, no driving of any
+other Chrome.
+
+```bash
+P="${CHROME_CONTROL_PORT:-9222}"
+curl -s 127.0.0.1:$P/json/version | head -2
+node $S/cdp-group.mjs "claude: <task>" https://example.com --port $P
+```
+
 If the configured host cannot be resolved or the SSH tunnel fails, diagnose
 connectivity before declaring the mini unavailable:
 
@@ -102,7 +115,7 @@ Tier 3 costs the logged-in session.
 | HTML of the user's open tab, tab list, run some JS there | **1 - `chrome-cli`** |
 | Network traffic, response bodies, console, cookies of the user's session | **2 - CDP on the real profile** |
 | Unattended/scripted browsing with no agent host configured | **3 - throwaway profile** |
-| Everything else - the default whenever `$CHROME_CONTROL_HOST` is set | **4 - the agent-Chrome host** |
+| Everything else - the default whenever `$CHROME_CONTROL_HOST` is set (`local` = this machine, no forward) | **4 - the agent-Chrome host** |
 
 ## The claude-in-chrome MCP is a LAST RESORT
 
