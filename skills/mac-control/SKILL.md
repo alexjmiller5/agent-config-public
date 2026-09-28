@@ -9,7 +9,7 @@ Three tiers, cheapest first. Start at the lowest that fits.
 
 | Need | Use |
 |---|---|
-| Local Mac, interactive Claude Code session, Pro/Max plan | **Tier 0** - the built-in `computer-use` MCP (section below). Screenshots, clicks, typing, per-app approval. Not available with `-p`, over ssh, on a remote machine, or in background jobs. |
+| Local Mac, interactive Claude Code session, Pro/Max plan | **Tier 0** - the built-in `computer-use` MCP (section below). Screenshots, clicks, typing, per-app approval. Runs on the machine the session is on; not available with `-p` or in background jobs. A session started over ssh (a Herdr pane on a remote Mac) counts as local to that Mac. |
 | Any Mac reachable from a shell (ssh to a headless mini, cron, background sessions) | **Tier 1** - stock macOS: `screencapture` for eyes, System Events (osascript) for hands. No install. This skill's core. |
 | Heavy or repeated UI work on that machine: annotated screenshots with element IDs, semantic clicks, background delivery without stealing focus | **Tier 2** - [Peekaboo](https://github.com/steipete/Peekaboo) CLI (`brew install openclaw/tap/peekaboo`, macOS 15+, MIT). |
 
