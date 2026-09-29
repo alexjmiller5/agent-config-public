@@ -24,6 +24,7 @@ Every Apple template (`ios-app`, `appstore-app`, `macos-app`) ships the same
 | `just run` | Debug build, boot the simulator if needed, install, launch; prints `bundle=<id> simulator=<udid>` (macOS: opens the app from `build/`) | a simulator runtime |
 | `just build` | Debug build + install on the phone (automatic signing, readable logs) | `IOS_DEVELOPMENT_TEAM`, `IOS_DEVICE_ID`, Xcode signed into the team |
 | `just deploy` | Release Ad Hoc `.ipa` in `build/` + install on the phone (`ios-app` only; the other two deploy through CI) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
+| `just ota` | Serve `build/<App>.ipa` as a tailnet install page (`ios-app` only; blocks while serving) | the `.ipa` from `just deploy`, Tailscale with HTTPS certificates |
 | `just logs` | Five minutes of device logs into `logs/` (Debug installs only) | `IOS_DEVICE_ID` |
 
 Environment interface: `IOS_TEST_DESTINATION` (simulator, default in the
@@ -112,16 +113,38 @@ xcrun devicectl device install app --device <udid> build/App.ipa
 xcrun devicectl device process launch --device <udid> --console <bundle-id>
 ```
 
-## Phone install from the build host
+## Phone install
 
-The build host has no phone; the phone installer does. `IOS_INSTALL_HOST`
-makes `just build` / `just deploy` do the hop: build and sign here, `scp`
-the artifact to that host, run `devicectl device install app` there. The
-phone must be on the same Wi-Fi as the installer (pairing happened once by
-cable). When the installer is asleep or unreachable the recipe prints the
-artifact path and the exact install command and exits non-zero: report that
-line to the owner and continue with what does not need the phone. No
-retries, no polling.
+The build host has no phone; the phone installer does. Three ways to get a
+build onto the phone:
+
+1. **Local network (default, try it first).** `IOS_INSTALL_HOST` makes `just
+   build` / `just deploy` do the hop: build and sign here, `scp` the artifact
+   to that host, run `devicectl device install app` there. The phone must be
+   on the same network as the installer and visible to it (pairing happened
+   once by cable). `devicectl` finds the phone by local discovery, so this
+   fails on networks that isolate clients (train, hotel, guest Wi-Fi):
+   `devicectl list devices` then shows the phone `unavailable`, its
+   `tunnelState` unavailable. It cannot be aimed at a VPN address.
+2. **Tailnet install link.** `just ota` (`scripts/ota-install.sh`) serves the
+   Ad Hoc `.ipa` from `just deploy` on the build host's tailnet name over
+   HTTPS and prints a URL; the owner opens it in Safari on the phone and taps
+   Install. Any network, one tap. It blocks while serving (`OTA_TTL`, default
+   900 s): run it in the background, hand over the URL, and confirm with the
+   owner that the app updated.
+3. **Cable.** The owner plugs the phone into the installer; the install
+   command the failed recipe printed then works.
+
+When the local-network install fails because the phone is unreachable, **ask
+the owner which of 2 and 3 they prefer** - neither is the default, and both
+need them. When the installer itself is asleep or unreachable, report the
+artifact path and the install command in one line and continue with what
+does not need the phone. No retries, no polling.
+
+Signed device builds need the login keychain: a plain ssh session on the
+installer gets `errSecInternalComponent` from `codesign`. Build where the
+keychain is unlocked (the build host, or a terminal pane inside the
+installer's GUI session).
 
 ## Gotchas
 
