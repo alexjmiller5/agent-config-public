@@ -38,7 +38,11 @@ setTimeout(() => { console.error('timeout (Allow sheet not approved?)'); process
 
 // Runs inside the extension origin. groupId -1 = chrome.tabGroups.TAB_GROUP_ID_NONE (ungrouped).
 const body = async ({ name, color, urls, close }) => {
-  const matches = await chrome.tabGroups.query({ title: name });
+  // With zero windows open (Chrome 154) the query throws instead of returning []: no group can exist then.
+  const matches = await chrome.tabGroups.query({ title: name }).catch((e) => {
+    if (/No current window/.test(e.message)) return [];
+    throw e;
+  });
   if (matches.length > 1) throw Error('Session group name is ambiguous; use a unique session name');
   let g = matches[0];
   if (close) {
