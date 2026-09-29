@@ -70,11 +70,17 @@ Call order for a project:
    errors come from `GetBuildLog` (filter to errors) rather than the raw log.
 3. `RunAllTests` / `RunSomeTests`; `GetTestList` to pick.
 4. `RenderPreview` for a view; `RunCodeSnippet` to evaluate an expression in a
-   file's context.
+   file's context. File arguments are project-organization paths
+   (`<Project>/App/ContentView.swift`, found with `XcodeGlob`), never
+   filesystem paths. "Not built with -Onone" means the Debug configuration
+   is optimized: set `SWIFT_OPTIMIZATION_LEVEL: "-Onone"` for Debug in
+   `project.yml` (XcodeGen does not) and `just gen`.
 5. `DeviceInteractionStartWorkspaceSession` → `DeviceInteractionInstallAndRun`
    → `DeviceInteractionSynthesize` (tap, swipe, type, press, capture) →
-   `DeviceInteractionEndSession`. Physical devices work here too when the
-   session's Mac has the device paired.
+   `DeviceInteractionEndSession`. The command grammar for `Synthesize`
+   (`t x y` to tap, capture, type, swipe) is in Apple's `device-interaction`
+   skill; read it before the first call. Physical devices work here too
+   when the session's Mac has the device paired.
 6. `GetConsoleOutput` (regex filter) while the app runs;
    `InvokeDebuggerCommand` for LLDB against the running process.
 7. `DocumentationSearch` before guessing an API; `XcodeGrep` / `XcodeRead`
