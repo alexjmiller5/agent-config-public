@@ -79,12 +79,24 @@ Call order for a project:
 7. `DocumentationSearch` before guessing an API; `XcodeGrep` / `XcodeRead`
    for project-aware search.
 
-Rules: a call that hangs is a missing grant (the owner approves the agent's
-code signature on the build host's display once, per repo root); ask the
-owner to look at that machine's display, never retry. The server crashes if
-its Xcode process goes away mid-session; reopen the workspace. The MCP
-closes the build and runtime loop; it does not see a 10-pixel layout
-mistake for you - capture and look.
+Rules:
+
+- **"Waiting for the user to approve this request"** on the first
+  workspace call: the agent's code signature is not approved yet. `xcrun
+  mcp-server status` lists it under *Pending approvals* with an id; the
+  owner runs `sudo xcrun mcp-server approve <id>` once. Report the id and
+  stop; never retry in a loop. Workspaces outside the permitted folders need
+  the same kind of grant (`allow-folder`).
+- **Every call hangs, `status` says "the service is running but did not
+  answer"**: a windowed Xcode is running on the host and shadows the
+  headless server. Quit it (`osascript -e 'tell application "Xcode" to
+  quit'`), `xcrun mcp-server stop`, call again. Anything that launches the
+  Xcode app (`xcrun agent skills export`, `open *.xcodeproj`, `just dev`)
+  recreates the problem on a build host.
+- `xcrun mcp-server show-logs` prints the path of the agent activity log:
+  every connection, refusal and tool call, with the reason.
+- The MCP closes the build and runtime loop; it does not see a 10-pixel
+  layout mistake for you - capture and look.
 
 ## Raw fallbacks (no MCP, CI, scripts)
 
@@ -130,6 +142,15 @@ retries, no polling.
 - **MCP grants are per code signature**: the approved binary is the agent
   itself; a wrapper (`timeout`, a shell script) gets approved instead and
   the agent stays blocked. Unsigned binaries get 24-hour grants only.
+- **Signing from a shell without a desktop login** (ssh, a headless build
+  host): the login keychain refuses with "User interaction is not allowed"
+  on import and `errSecInternalComponent` on codesign. Signing identities
+  for such a host live in a dedicated keychain that the shell unlocks
+  itself, as CI does.
+- **App Store installs need root**: `mas install` cannot run inside a
+  non-interactive switch; the first install of Xcode comes from the App
+  Store app, and an installed Xcode with an unaccepted license stops
+  Homebrew entirely until `xcodebuild -license accept` runs as root.
 - **"Profile doesn't match" / "no identity found"** on `just deploy`: the
   Apple Distribution identity or the Ad Hoc profile is not installed on this
   Mac; both are machine setup, not a project bug.
