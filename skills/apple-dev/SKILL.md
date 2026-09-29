@@ -84,16 +84,18 @@ Rules:
 
 - **"Waiting for the user to approve this request"** on the first
   workspace call: the agent's code signature is not approved yet. `xcrun
-  mcp-server status` lists it under *Pending approvals* with an id; the
-  owner runs `sudo xcrun mcp-server approve <id>` once. Report the id and
-  stop; never retry in a loop. Workspaces outside the permitted folders need
+  mcp-server status` lists it under *Pending approvals* with an id. Where
+  the machine sheet names an approve helper, run it and retry once;
+  otherwise the owner runs `sudo xcrun mcp-server approve --always <id>`.
+  Report the id and stop; never retry in a loop. Workspaces outside the permitted folders need
   the same kind of grant (`allow-folder`).
 - **Every call hangs, `status` says "the service is running but did not
   answer"**: a windowed Xcode is running on the host and shadows the
   headless server. Quit it (`osascript -e 'tell application "Xcode" to
   quit'`), `xcrun mcp-server stop`, call again. Anything that launches the
   Xcode app (`xcrun agent skills export`, `open *.xcodeproj`, `just dev`)
-  recreates the problem on a build host.
+  recreates the problem on a build host. Apple's skills come headless from
+  `xcrun agent plugin path --plugin-format claude` instead.
 - `xcrun mcp-server show-logs` prints the path of the agent activity log:
   every connection, refusal and tool call, with the reason.
 - The MCP closes the build and runtime loop; it does not see a 10-pixel
