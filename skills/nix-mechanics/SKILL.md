@@ -111,6 +111,15 @@ or build with `lib.fakeSha256` and copy the real one from the mismatch error.
       bare `stdenv.isDarwin` is deprecated and emits an evaluation warning
       on every build
 - [ ] Flake-input packages referenced as `inputs.x.packages.${pkgs.system}.default`
+- [ ] A repo file reaches a derivation ONLY as `"${./path}"` (string
+      interpolation of the path) - never `toString ./path`. Interpolation
+      copies the file to its own store path with string context, so the
+      generated file, plist or JSON pins it. `toString` yields a bare
+      `/nix/store/<hash>-source/...` string with no context; under lazy
+      trees (Determinate Nix, `lazy-trees = true`) that `-source` path is
+      virtual and is never even materialized, and a wrapper built from it
+      fails at run time with "No such file or directory" on a path that
+      looks perfectly valid
 
 ## Troubleshooting
 
