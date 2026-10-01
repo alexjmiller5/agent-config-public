@@ -530,6 +530,11 @@ state what you need, why, and what happens next:
 > "I need you to log into the account page and get to the orders list, then
 > tell me when you're there - I'll be capturing traffic the whole time."
 
+Before asking which account to use at a login wall, check the user's
+password manager skill, if the setup has one: it knows which logins exist
+for that site. One match is the account; several mean asking the user to
+choose among them, not guessing from the browser's signed-in sessions.
+
 **Never attempt to automate past a credential or CAPTCHA wall.** Hand it to
 the user. This is the safety boundary that keeps the tooling pointed at sites they
 legitimately has access to.
