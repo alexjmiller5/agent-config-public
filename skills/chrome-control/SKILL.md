@@ -222,7 +222,8 @@ automated test software"* infobar. That's expected, not a problem.
 The actor. Same one-click approval, but drives the page with **trusted**
 input (`Input.dispatchMouseEvent` / `dispatchKeyEvent`), which is the only
 way to click things that ignore synthetic events (Google Maps list links,
-icon pickers). Steps are JSON, one per line.
+icon pickers). One-shot mode reads a single JSON array of steps on stdin;
+`--follow` reads one step object per line.
 
 ```bash
 # one-shot (add --port 9223 on the agent host: no Allow sheet there)
