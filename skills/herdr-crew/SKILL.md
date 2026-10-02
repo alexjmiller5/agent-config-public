@@ -83,4 +83,5 @@ Herdr is the ledger: no state file.
 | `agent_blocked` on prompt | It waits at a dialog; relay it, do not type over it |
 | `agent_prompt_stalled` | The text sits unsent in the agent's input box (a fresh agent can drop the Enter); `agent read --source visible`, then `herdr agent send-keys <name> enter` - never resend the text |
 | Prompt sent, nothing happens | `--wait --until working` confirms the turn started; on a timeout, read before resending |
+| Text in an idle agent's input box | Often the harness's greyed prompt suggestion, not something the user typed; a plain-text read cannot tell them apart. Never submit it; ask the user |
 | jq errors on `agent read` | `agent read` prints plain text, not JSON; every other command returns JSON |
