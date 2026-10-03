@@ -187,3 +187,15 @@ installer's GUI session).
   Mac; both are machine setup, not a project bug.
 - **Full rebuilds per MCP call**: the server does not track incremental
   state between invocations; batch edits before rebuilding.
+- **XCUITest cannot read the app's clipboard from the runner**: reading
+  `UIPasteboard.general` there hits the cross-app paste permission and never
+  returns the copied text. Write a sentinel from the runner (writes are
+  allowed), then paste through the OS edit menu into a field of the app
+  under test and read that field's value.
+- **Read-only SwiftUI rows expose one combined label**: `LabeledContent`
+  appears as a single static text `"Label, Value"`. Exact
+  `staticTexts["Value"]` lookups never match, so negative checks on them pass
+  vacuously; match with `label CONTAINS`.
+- **iOS 27 `confirmationDialog` is a popover with no cancel button**: only
+  the destructive action is a button. Dismiss by tapping a point outside the
+  popover's frame, then assert the sheet is gone.
