@@ -279,9 +279,8 @@ class Guard:
         try:
             await self.cdp.send("Page.stopLoading")
             await self.page.goto("about:blank", wait_until="commit", timeout=2000)
-            if self.page.url != "about:blank" or not await self.page.evaluate(
-                "location.href === 'about:blank' && document.body.childElementCount === 0"
-            ):
+            frame = (await self.cdp.send("Page.getFrameTree"))["frameTree"]["frame"]
+            if self.page.url != "about:blank" or frame["url"] != "about:blank":
                 raise Error("Cleanup could not verify a blank document")
         except asyncio.CancelledError:
             await self.finish_emergency_close()
@@ -329,8 +328,13 @@ class Guard:
                 {"identifier": self.script_id},
             )
             self.script_id = None
-        with suppress(Error):
-            await self.page.evaluate("window.__bugHuntRestore?.()")
+        with suppress(Error, TimeoutError):
+            await asyncio.wait_for(
+                self.cdp.send(
+                    "Runtime.evaluate", {"expression": "window.__bugHuntRestore?.()"}
+                ),
+                0.5,
+            )
         await self.cdp.send("Fetch.disable")
         if self.pending:
             await asyncio.gather(*self.pending)

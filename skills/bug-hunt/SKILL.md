@@ -73,7 +73,8 @@ explicit test limitations using `guard_resource_types` and the blocked records'
 site bug. Do not weaken the guard on production simply to improve coverage.
 
 Cleanup navigates the supplied tab to `about:blank` while the guard is active,
-waits for navigation commit, verifies that document, removes interception/hooks,
+waits for navigation commit, verifies the main-frame URL through CDP (without
+waiting for a page JavaScript execution context), removes interception/hooks,
 restores viewport metrics
 where possible, then disconnects. **Normal cleanup leaves the existing tab and
 shared Chrome open.** The caller owns grouping, final viewport resets and cleanup.

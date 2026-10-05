@@ -445,7 +445,14 @@ fetch('http://localhost:EXTERNAL/out').catch(()=>{});
             return await goto(url, **kwargs)
 
         try:
-            with patch.object(self.page, "goto", side_effect=slow_load):
+            with (
+                patch.object(self.page, "goto", side_effect=slow_load),
+                patch.object(
+                    self.page,
+                    "evaluate",
+                    side_effect=RuntimeError("Blank execution context unavailable"),
+                ),
+            ):
                 await guard.close()
             self.assertEqual(self.page.url, "about:blank")
             self.assertFalse(self.page.is_closed())
