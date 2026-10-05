@@ -5,11 +5,11 @@ description: Build, run, test, verify and install iOS and macOS apps as an agent
 
 # Apple Dev
 
-How an agent works on an Xcode project without a human at the keyboard. The
-machine sheet (loaded at session start) says which Mac is the **build host**
-(Xcode 27, simulators, the `xcode` MCP server) and which is the **phone
-installer** (the Mac the owner's iPhone is paired to). This skill is the
-procedure; it names no machine.
+How an agent builds, verifies, and delivers an Xcode project. Local
+development uses the **build host** named in the machine sheet (Xcode,
+simulators, the `xcode` MCP server). The sheet also identifies the **phone
+installer**, the Mac paired to the owner's iPhone. Personal Ad Hoc release
+signing runs on a macOS CI runner.
 
 ## Verbs
 
@@ -23,8 +23,8 @@ Every Apple template (`ios-app`, `appstore-app`, `macos-app`) ships the same
 | `just test` | Unit tests on a simulator (iOS) or the Mac (macOS) | a simulator runtime |
 | `just run` | Debug build, boot the simulator if needed, install, launch; prints `bundle=<id> simulator=<udid>` (macOS: opens the app from `build/`) | a simulator runtime |
 | `just build` | Debug build + install on the phone (automatic signing, readable logs) | `IOS_DEVELOPMENT_TEAM`, `IOS_DEVICE_ID`, Xcode signed into the team |
-| `just deploy` | Release Ad Hoc `.ipa` in `build/` + install on the phone (`ios-app` only; the other two deploy through CI) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
-| `just ota` | Serve `build/<App>.ipa` as a tailnet install page (`ios-app` only; blocks while serving) | the `.ipa` from `just deploy`, Tailscale with HTTPS certificates |
+| `just deploy` | Local Release Ad Hoc export + phone install (`ios-app` fallback with a stated reason) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
+| `just ota` | Serve `build/<App>.ipa` as a tailnet install page (`ios-app` only; blocks while serving) | a verified, decrypted CI IPA or local export; Tailscale with HTTPS certificates |
 | `just logs` | Five minutes of device logs into `logs/` (Debug installs only) | `IOS_DEVICE_ID` |
 
 Environment interface: `IOS_TEST_DESTINATION` (simulator, default in the
@@ -32,6 +32,35 @@ justfile), `IOS_DERIVED_DATA` (keep it outside any cloud-synced folder),
 `IOS_INSTALL_HOST` (ssh host of the phone installer; unset = this Mac
 installs). Raw `xcodebuild` output is long: pipe it through `xcbeautify`
 when you read it yourself.
+
+## Personal Ad Hoc CI
+
+`ios-app` uses a manual `workflow_dispatch` signing workflow; ordinary
+validation runs do not need signing secrets. CI archives and exports for
+registered devices, with installation as a separate step. TestFlight and
+App Store submission belong to `appstore-app`.
+
+The signing helper accepts `--project`, `--scheme`, and `--output`, with
+`IOS_CERTIFICATE_P12_BASE64`, `IOS_CERTIFICATE_PASSWORD`, `IOS_PROFILE_BASE64`,
+and optional `IOS_DEVICE_ID`. Credentials come from the project's configured
+secret manager. CI imports into a temporary keychain, restores the previous
+keychain search list, and removes temporary signing material even on failure.
+A runner does not need a desktop login or the phone paired to it.
+
+Generate a temporary age identity in private local scratch for each dispatch.
+Supply only its **public** key as `artifact_recipient`; keep the private
+identity locally until download/decryption is complete. Watch the workflow,
+then download its encrypted `.ipa.age` artifact within the one-day retention
+period. Decrypt locally, verify the exported app's signature, bundle/team and
+device profile, and place the IPA at the path expected by the project's
+install/OTA helper. Remove the temporary identity after decryption and the
+decrypted transfer copy when installation no longer needs it.
+
+Public-repository Actions artifacts are not private. Upload only the
+encrypted IPA, never standalone profiles, P12 files, private keys, keychains,
+or plaintext IPAs. The IPA necessarily contains an embedded provisioning
+profile with device IDs; retain it for installation and keep it out of logs.
+No persistent encryption key or recipient repository variable is needed.
 
 ## Verification ladder
 
@@ -46,9 +75,9 @@ Cheapest rung that proves the change, then stop.
    controls by label, never by guessed coordinates. Read `GetConsoleOutput`
    for OSLog and crashes.
 4. **Hardware-only behavior** (camera, microphone, ShazamKit, push, HealthKit,
-   real network conditions): `just build` (Debug, logs readable) or `just
-   deploy` on the phone, then ask the owner for the one check only a human
-   can do.
+   real network conditions): `just build` (Debug, logs readable) or install
+   the verified CI Ad Hoc IPA, then ask the owner for the one check only a
+   human can do.
 5. **A macOS app**: `just run` opens it from `build/`; look at it and drive it
    with the `mac-control` skill (screenshot, accessibility tree, clicks).
 
@@ -123,19 +152,22 @@ xcrun devicectl device process launch --device <udid> --console <bundle-id>
 
 ## Phone install
 
-The build host has no phone; the phone installer does. Three ways to get a
-build onto the phone:
+CI produces the artifact; the paired phone installer or an OTA page delivers
+it. Download, decrypt, and verify a CI IPA before these steps. Local Debug
+builds remain useful for readable device logs. Three install paths:
 
 1. **Local network (default, try it first).** `IOS_INSTALL_HOST` makes `just
-   build` / `just deploy` do the hop: build and sign here, `scp` the artifact
-   to that host, run `devicectl device install app` there. The phone must be
+   build` / local `just deploy` do the hop. For a CI IPA, use the project's
+   install helper on the downloaded artifact without rebuilding or signing
+   it again. Copy the artifact to the paired host and run
+   `devicectl device install app` there. The phone must be
    on the same network as the installer and visible to it (pairing happened
    once by cable). `devicectl` finds the phone by local discovery, so this
    fails on networks that isolate clients (train, hotel, guest Wi-Fi):
    `devicectl list devices` then shows the phone `unavailable`, its
    `tunnelState` unavailable. It cannot be aimed at a VPN address.
 2. **Tailnet install link.** `just ota` (`scripts/ota-install.sh`) serves the
-   Ad Hoc `.ipa` from `just deploy` on the build host's tailnet name over
+   verified Ad Hoc `.ipa` on the serving Mac's tailnet name over
    HTTPS and prints a URL; the owner opens it in Safari on the phone and taps
    Install. Any network, one tap. It blocks while serving (`OTA_TTL`, default
    900 s): run it in the background, hand over the URL, and confirm with the
@@ -149,10 +181,10 @@ need them. When the installer itself is asleep or unreachable, report the
 artifact path and the install command in one line and continue with what
 does not need the phone. No retries, no polling.
 
-Signed device builds need the login keychain: a plain ssh session on the
-installer gets `errSecInternalComponent` from `codesign`. Build where the
-keychain is unlocked (the build host, or a terminal pane inside the
-installer's GUI session).
+Installing an already signed IPA does not require a signing identity on the
+installer. Local signing needs an accessible signing keychain: a locked login
+keychain can cause `errSecInternalComponent` over SSH. Use the configured
+signing setup; CI uses its temporary keychain instead of a desktop session.
 
 ## Gotchas
 
