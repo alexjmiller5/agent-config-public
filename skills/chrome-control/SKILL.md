@@ -1,9 +1,26 @@
 ---
 name: chrome-control
-description: Invoke FIRST for ANY browser task - anything touching Chrome, a web page, a tab, or a localhost dev server - reading HTML, listing tabs, running JS, clicking or filling pages, E2E-testing a web UI, capturing network traffic, cookies, console, screenshots. Must load before any mcp__claude-in-chrome__* call; the web-recon skill builds on it.
+description: Invoke FIRST for blocked web access (Reddit, Instagram, Wirecutter/NYT, HTTP 403, bot checks, login/paywall stubs) and ANY browser task - Chrome, pages, tabs, localhost, HTML, JS, clicks/forms, E2E tests, network, cookies, console, screenshots. Must load before any mcp__claude-in-chrome__* call; web-recon builds on it.
 ---
 
 # Chrome Control
+
+## When normal web access is blocked
+
+If web search/open, fetch, curl, or another page reader returns a bot block,
+HTTP 403, login/paywall stub, or empty JavaScript shell, open the exact URL
+in the configured agent Chrome and read the rendered page before declaring
+the source inaccessible or asking the user to paste it. For sites known to
+block ordinary readers, such as Reddit, Instagram, and Wirecutter/NYT, go
+directly to agent Chrome for page content; search tools can still find links.
+
+Use the user's existing signed-in session and subscription access, with your
+own session group and explicit target as described below. The persistent
+browser can load content that anonymous fetches cannot. Verify the requested
+article or post actually loaded; a challenge page is not source content.
+If Chrome itself still needs login, MFA, a subscription, or a CAPTCHA,
+follow the password-manager and human-handoff guidance below. Browser access
+does not guarantee that every page will be available.
 
 ## The browser runs on the agent-Chrome host, not on this machine
 
