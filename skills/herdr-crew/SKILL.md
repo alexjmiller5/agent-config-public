@@ -21,7 +21,7 @@ skill is the workflow and the gotchas. Requires `HERDR_ENV=1`.
 3. **Launch each agent:**
 
 ```bash
-T=$(herdr tab create --cwd "$DIR" --label "Short Label" --no-focus)
+T=$(herdr tab create --cwd "$HOME" --label "Short Label" --no-focus)
 P=$(echo "$T" | jq -r .result.root_pane.pane_id)
 herdr agent start <name> --kind claude --pane "$P" --timeout 60000   # bare: no prompt argument
 herdr agent wait <name> --until idle --timeout 60000                 # startup can report blocked first
@@ -30,8 +30,11 @@ herdr agent prompt <name> "$(cat "$PROMPT_FILE")" --wait --until working --timeo
 
 - `<name>` follows `[a-z][a-z0-9_-]{0,31}`, describes the batch, and is
   unique per machine.
-- `$DIR` is the owning repo (home if none).
+- New sessions start in the destination user's home folder by default. Use
+  another root only when the user requests it; never inherit the coordinator's
+  cwd. Put the owning repo path in the prompt so project commands run there.
 - Another machine: prefix every command with `herdr --machine <label>`.
+  Use that machine's home for `--cwd`, not the coordinator's `$HOME`.
 
 4. **Record the crew** in your reply as a table: name, tab label,
    machine, cwd, items, session id (`herdr agent get <name>` →
