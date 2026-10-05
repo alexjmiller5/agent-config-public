@@ -10,26 +10,40 @@ reports the session's state; it never continues the work.
 
 ## Output
 
-Exactly these five headed sections, in this order, each a bulleted list. A
-section with nothing in it reads `- none`.
+Exactly two headed sections, in this order. Put most of the detail in
+**Needs you**, so the user can answer accurately without scrolling back.
 
-1. **Done** - outcomes finished this session, one bullet per outcome (not per
-   step), each with the evidence the user would click: commit hash, PR or page
-   URL, file path, passing check.
-2. **In progress** - work started and not finished, how far it got, and
-   anything still running: background shells, monitors and watchers, subagents,
-   remote jobs, CI runs.
-3. **Needs you** - every open decision, approval, question or manual step only
-   the user can do, including ones asked long ago and never answered. Number
-   them, give the options with your recommendation first, so the user can reply
-   "1a, 2b".
-4. **Remaining** - agreed work not started yet, in the order you would do it.
-5. **Loose ends** - whatever else the user would want surfaced: uncommitted or
-   unpushed changes, files, tabs or processes you created, trackers or tickets
-   not yet updated, checks that failed or were skipped, assumptions you made,
-   problems you noticed outside the scope.
+### Summary
 
-End the turn after the five sections.
+One short paragraph, usually 2-4 sentences, combining completed outcomes,
+work in progress, remaining work and loose ends. Include the most useful
+result or evidence link, anything still running, and material blockers or
+unverified work. Distinguish finished work from plans. Compress routine checks
+and cleanup details; do not recreate the old sections as labeled bullets.
+
+### Needs you
+
+A numbered list of every unresolved decision, approval, question or manual
+step only the user can handle, including earlier requests still unanswered.
+Order blockers first. Give each item enough context to stand alone:
+
+- State the specific question or action, what it concerns, and why their
+  input is needed. Explain what their answer will enable or change.
+- For choices, use lettered options with the recommendation first, its reason,
+  and the meaningful tradeoffs. Make replies like "1a, 2b" possible. Do not
+  invent choices when a direct answer is needed.
+- For missing information, specify the exact details needed and a useful
+  example or answer format when it would remove ambiguity.
+- For manual steps, give the relevant link or location, concise instructions,
+  and what result the user should report back.
+- Carry forward prior answers and approvals; ask only for what is still
+  missing. Never turn work the agent can do into a request for the user.
+
+Use a few sentences per item when needed to make the decision clear; omit
+implementation details that do not affect the answer. If nothing needs the
+user, write "Nothing needed from you."
+
+End the turn after these two sections. Do not continue the underlying work.
 
 ## Gathering
 
@@ -42,14 +56,16 @@ End the turn after the five sections.
    and the processes you started, the current state of any ticket you were
    updating.
 3. Report what is true now. Something said or planned but not done goes under
-   Remaining or Loose ends, never Done.
+   the Summary as pending or unverified, never as completed.
 
 ## Common mistakes
 
 | Mistake | Instead |
 |---|---|
-| Restating only the pending questions | All five sections; the questions are section 3 |
-| Narrating steps ("then I ran...") | One bullet per outcome, with its evidence |
-| "Done" for written-but-unverified or unpushed work | In progress or Loose ends, saying what is missing |
-| Forgetting a background command or watcher still running | Check the task list; list it under In progress |
-| Answering a question or resuming work after the recap | Stop; the user's reply decides what happens next |
+| A long status report followed by terse questions | Brief Summary, self-contained Needs you items |
+| A choice without context or consequences | Explain what changes, recommend an option and why |
+| Calling written-but-unverified or unpushed work done | Say what verification or delivery remains |
+| Hiding a needed approval in the Summary | Put the actionable request in Needs you |
+| Forgetting a running command or watcher | Check current processes and mention them in the Summary |
+| Asking again for an answered question | Preserve the answer and request only missing input |
+| Answering questions or resuming work after the recap | Stop; the user's reply decides what happens next |
