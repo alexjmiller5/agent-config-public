@@ -7,7 +7,11 @@ description: Use when one agent should coordinate other coding agents in Herdr t
 
 You coordinate; each crew agent works in its own Herdr tab, where the user
 can watch and type. `herdr --skill` is the command-syntax authority; this
-skill is the workflow and the gotchas. Requires `HERDR_ENV=1`.
+skill is the workflow and the gotchas. It requires access to a running Herdr
+server. Approved independent workers use an explicitly selected destination and
+the IDs returned by tab creation; the coordinator's own pane identity and
+inherited `HERDR_ENV` are not launch requirements. Moving, renaming or closing
+the coordinator's conversation still requires its own verified identity.
 
 ## Dispatch
 
@@ -18,14 +22,17 @@ skill is the workflow and the gotchas. Requires `HERDR_ENV=1`.
    the user set for this run (for example "propose first, then wait"), how
    to report (ends every turn with status and what it needs), and batch
    notes.
-3. **Launch each agent:**
+3. **Select the destination, then launch each agent:** use the requested server
+   session, or `default`. Run `herdr --session <server> workspace list` and select
+   the intended workspace; use the sole workspace when there is only one.
+   Use that explicit server for every command below and when monitoring.
 
 ```bash
-T=$(herdr tab create --cwd "$HOME" --label "Short Label" --no-focus)
+T=$(herdr --session <server> tab create --workspace <workspace-id> --cwd "$HOME" --label "Short Label" --no-focus)
 P=$(echo "$T" | jq -r .result.root_pane.pane_id)
-herdr agent start <name> --kind claude --pane "$P" --timeout 60000   # bare: no prompt argument
-herdr agent wait <name> --until idle --timeout 60000                 # startup can report blocked first
-herdr agent prompt <name> "$(cat "$PROMPT_FILE")" --wait --until working --timeout 30000
+herdr --session <server> agent start <name> --kind claude --pane "$P" --timeout 60000   # bare: no prompt argument
+herdr --session <server> agent wait <name> --until idle --timeout 60000                 # startup can report blocked first
+herdr --session <server> agent prompt <name> "$(cat "$PROMPT_FILE")" --wait --until working --timeout 30000
 ```
 
 - `<name>` follows `[a-z][a-z0-9_-]{0,31}`, describes the batch, and is
@@ -33,11 +40,13 @@ herdr agent prompt <name> "$(cat "$PROMPT_FILE")" --wait --until working --timeo
 - New sessions start in the destination user's home folder by default. Use
   another root only when the user requests it; never inherit the coordinator's
   cwd. Put the owning repo path in the prompt so project commands run there.
-- Another machine: prefix every command with `herdr --machine <label>`.
+- After a partial startup or timeout, inspect the returned pane and agent
+  before retrying. Reuse that destination; do not create a duplicate worker.
+- Another machine: use `herdr --machine <label> --session <server>` for every command.
   Use that machine's home for `--cwd`, not the coordinator's `$HOME`.
 
-4. **Record the crew** in your reply as a table: name, tab label,
-   machine, cwd, items, session id (`herdr agent get <name>` →
+4. **Record the crew** in your reply as a table: name, tab label and ID, pane ID,
+   machine, server, cwd, items, session id (`herdr agent get <name>` →
    `.result.agent.agent_session.value`).
 
 ## Monitor
@@ -72,9 +81,10 @@ Herdr is the ledger: no state file.
 
 ## Finish
 
-- Close only tabs you created, and only once their work is done and
-  nothing in them waits on the user: `herdr tab close <tab_id>`.
-- Never close a tab by focus or guess.
+- Have each worker preserve its result and follow its own verified completion
+  procedure before closing its own tab. A worker awaiting user input or review
+  stays open. Creating its tab does not authorize closing its conversation.
+- Never close another session by focus, guess, or a stale creation receipt.
 
 ## Gotchas
 
