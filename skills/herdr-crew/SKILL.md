@@ -42,8 +42,10 @@ herdr --session <server> agent prompt <name> "$(cat "$PROMPT_FILE")" --wait --un
   cwd. Put the owning repo path in the prompt so project commands run there.
 - After a partial startup or timeout, inspect the returned pane and agent
   before retrying. Reuse that destination; do not create a duplicate worker.
-- Another machine: use `herdr --machine <label> --session <server>` for every command.
-  Use that machine's home for `--cwd`, not the coordinator's `$HOME`.
+- Another machine: replace `herdr --session <server>` with
+  `herdr --machine <label>` for every command; the saved machine profile selects
+  its server session. These selectors cannot be combined. Use that machine's
+  home for `--cwd`, not the coordinator's `$HOME`.
 
 4. **Record the crew** in your reply as a table: name, tab label and ID, pane ID,
    machine, server, cwd, items, session id (`herdr agent get <name>` →
