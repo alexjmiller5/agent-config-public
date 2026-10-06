@@ -1,18 +1,14 @@
 ---
 name: travel
 description: >-
-  Comprehensive, source-cited briefing for a city the user is visiting - what they always want when
-  landing somewhere new: airport→city transport, transit (fares, passes, tap-to-pay), rideshare
-  apps, money traps (currency, ATMs, DCC, FX fees, cash needs, card acceptance), where the city
-  center is and the best area to stay/base in, language & English proficiency + key phrases,
-  must-have local apps, tap-water drinkability, eSIM, weather &
-  packing for the dates, local food and where locals eat, must-do sights with a day-by-day plan,
-  nightlife (timing, dress, tickets), safety, LGBTQ+ acceptance, tipping, and emergency/health.
-  Use whenever the user mentions an upcoming or current trip, says they "just landed" somewhere, asks
-  "what do I need to know about [city]", is planning travel, or asks about transport / tap water /
-  money / ATMs / safety / nightlife / clubs / food for a specific destination - even if they don't
-  say "travel." Where the setup provides trip data (e.g. a Notion Trips DB), pulls trip dates and notes from it and reconciles the packing
-  list. ALWAYS web-search current facts and cite sources, especially tap water and money/fares.
+  Use for upcoming or current trips, "just landed", city briefings, travel planning,
+  or destination questions about transport, money, ATMs, tap water, safety, food or
+  nightlife. Covers airport-to-city transport; transit fares, passes and payment;
+  rideshare; currency, DCC, FX fees, cash and cards; neighborhoods and lodging;
+  language and key phrases; local apps and eSIM; drinking water; weather and packing;
+  food, sights and day plans; nightlife timing, dress and tickets; LGBTQ+ acceptance,
+  tipping, emergencies and health. Produces a source-cited briefing with current
+  web research. Uses available trip dates, notes and packing lists.
 ---
 
 # Travel Briefing
