@@ -64,7 +64,8 @@ No persistent encryption key or recipient repository variable is needed.
 
 ## Verification ladder
 
-Cheapest rung that proves the change, then stop.
+Choose the cheapest sufficient evidence for each affected behavior. A passing
+mock does not discharge a separate hardware or interaction requirement.
 
 1. **Logic**: `just test`. Write the test first; mutation-test it.
 2. **A view**: `RenderPreview` through the Xcode MCP on the `#Preview` of the
@@ -83,6 +84,32 @@ Cheapest rung that proves the change, then stop.
 
 Regression-lock a flow only when the project has one worth locking: add an
 XCUITest target then, not by default.
+
+## Deterministic tests and hardware boundaries
+
+Keep business logic independent of transport, clocks and recording devices.
+Use the project's existing injection seams; add a small protocol or closure
+only where a concrete test needs it. Test fixtures contain synthetic data or
+licensed sample audio, never a user's recordings, credentials or identifiers.
+
+| Behavior | Deterministic evidence | Separate acceptance |
+|---|---|---|
+| Connectivity and retry | Inject timeout, offline and server rejection into the real request path; assert pending/error state, cancellation, retry after recovery and no duplicate submission. Restart and verify recovery when persistence is promised. | Exercise the running app's offline/reconnect UI; real service access and OS background delivery need their own check. |
+| Audio processing | Feed a prerecorded fixture through the production decoding/signature/processing path; assert useful output and malformed/empty-input handling. | A fixture proves processing, not microphone access, route selection, capture quality or recognition by a live service. |
+| Recording | Inject permission outcomes, interrupted capture and input failure; assert state, duration and cleanup using a controlled clock. | Verify actual permission denied/granted behavior, microphone capture and relevant interruptions on the device that provides them. |
+| Taps, swipes and drags | Use current screenshot and accessibility hierarchy to target the running view; perform the gesture and assert its visible result, boundary behavior and cancellation. | A preview or a model method call does not prove hit targets, scrolling or gesture conflicts; capture the resulting UI. |
+
+For a bug, reproduce the user-visible failure before the fix. Test the expected
+behavior, then temporarily remove the fix or break the relevant transition to
+prove the test detects it. Keep fake services confined to previews/tests or an
+explicit development entry point; normal app launches use production services.
+Never disable host networking, revoke shared permissions or disturb another
+agent's simulator to simulate failure. Use an isolated test instance.
+
+Record which evidence came from a unit test, fixture, simulator, Mac or physical
+device. Finish all available programmatic checks before asking for one precise
+human-only check. Unavailable microphone, phone, push or signing acceptance
+stays unverified with its required action; do not replace it with a mock pass.
 
 ## The Xcode MCP server
 
