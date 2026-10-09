@@ -80,11 +80,16 @@ defaults, so always put the recommendation in `data-default`.
 </section>
 ```
 
-Keep the page plain: a short lead saying what the batch is, one numbered
-section per decision with the evidence (numbers, a table, a screenshot), the
-choices last. Mobile first (it will be read on a phone): no fixed widths, no
-tiny text. Use the reviewer's words for the choices, not internal ids.
-Images: `<img src="shot.png">` with the file in the same directory.
+**Start from `template.html` in this skill directory** (copy it, keep its
+`<style>`, replace the sections). Its colors are tokens redefined once for
+dark mode; a page that hardcodes a light card background under dark-mode
+text is unreadable on a phone at night, and that is the most common way a
+hand-written page fails. Keep the page plain: a short lead saying what the
+batch is, one numbered section per decision with the evidence (numbers, a
+table, a screenshot), the choices last. Mobile first (it will be read on a
+phone): no fixed widths, no tiny text. Use the reviewer's words for the
+choices, not internal ids. Images: `<img src="shot.png">` with the file in
+the same directory.
 
 ## Answers
 
