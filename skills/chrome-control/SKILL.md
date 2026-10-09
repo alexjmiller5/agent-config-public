@@ -494,7 +494,16 @@ profile is `cdp-act.mjs`'s `{"shot":...}` step (Tier 2).
    `Target.attachedToTarget`, not at the message's top level.
 5. **Kill leaked browsers.** The CLI daemon and headless one-shots leak Chrome
    processes. `pgrep -fl "remote-debugging-port|chrome-devtools-mcp"` and clean
-   up when done.
+   up when done. `--headless --dump-dom` likewise prints the DOM and may
+   never exit (Chrome 154): read stdout up to `</html>`, then kill it.
+6. **Killed renderers hang CDP and can take the borrowed extension down**
+   (Chrome 154). A crashed tab ("Can't open this page", error code 15) still
+   lists in `/json/list` but every `Runtime`/`Page` call on it times out:
+   close it and open a fresh tab. If `cdp-group.mjs` then exits 3 with
+   `Cannot read properties of undefined (reading 'query')`, the extension is
+   `TERMINATED` (`chrome://extensions-internals`, `registry_status`); from a
+   `chrome://extensions/` tab of your own, evaluate
+   `chrome.developerPrivate.reload("<ext id>", {failQuietly: true}, cb)`.
 
 ## When reality contradicts this skill, FIX THIS SKILL
 
@@ -524,8 +533,11 @@ opened. This also applies to failed or abandoned browser work.
   by its id; a retry can no longer find it by group name.
   `closed=false` only means no open group matched, not that a saved entry
   was deleted. If the window was already closed and its saved group remains,
-  use Chrome's saved-groups menu to **Delete group** for that exact session.
-  Never bulk-delete other sessions' groups by prefix or apparent age.
+  use Chrome's saved-groups menu to **Delete group** for that exact session:
+  the ⋮ app menu > Tab groups > `<name> group - Closed` > Delete group, then
+  the "Delete Tab Group?" dialog's **Delete Group** button. On a headless host
+  mac-control's System Events tier presses these by AX name from a window of
+  your own; re-list the menu to confirm. Never bulk-delete other sessions' groups by prefix or apparent age.
 - `chrome-cli open` prints `Id: <tab>` / `Window id: <win>` - keep them and
   run `chrome-cli close -t <id>` (or `close -w <win>` for an `open -n` window)
   when finished with it. A tab you navigated but did not create stays open.
