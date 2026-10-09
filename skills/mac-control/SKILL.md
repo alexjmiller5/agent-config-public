@@ -123,7 +123,19 @@ Rules that bite:
   `sshd-keygen-wrapper` are what CI boxes rely on.
 - The display must be awake and unlocked: `caffeinate -u -t 2` wakes it; the
   login/lock screen ignores synthetic input, so a headless Mac needs
-  auto-login (or a human once). Apple-silicon minis create a 1080p virtual
+  auto-login (or a human once). Check the console session first; this prints
+  `locked`, `unlocked` or `login-window` (nobody logged in):
+
+  ```bash
+  s=$(ioreg -n Root -d1 -a | plutil -extract IOConsoleUsers.0 json -o - - 2>/dev/null); case $s in *'"CGSSessionScreenIsLocked":true'*) echo locked;; *'"kCGSessionLoginDoneKey":true'*) echo unlocked;; *) echo login-window;; esac
+  ```
+
+  While a screen-lock delay is set (`sysadminctl -screenLock status`), a
+  headless Mac relocks on its own: auto-login after a reboot locks again when
+  the screen was locked before it, and a Screen Sharing session that started
+  on a locked screen locks it again on disconnect (`ScreenState_Restore`, in
+  either mode). `sysadminctl -screenLock off -password -` (owner, prompts for
+  the password) stops both. Apple-silicon minis create a 1080p virtual
   display with no monitor attached; if screenshots come back *empty* rather
   than permission-denied, the machine has no framebuffer - use a virtual
   display (Mirage, BetterDisplay) or an HDMI dummy plug.
