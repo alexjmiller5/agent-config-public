@@ -36,10 +36,11 @@ verdict gc                   # end of session: purge, kill orphan waits, list st
 1. Write the page (contract below) into a directory with `index.html` and
    any screenshots next to it. Relative `src` paths resolve to the review.
 2. `verdict publish` once. The URL is stdout, `id: <id>` is stderr. Put the
-   link in chat on its own line, plus on the task record's links if the
-   workspace has one. Say what you need decided in one sentence; the page
-   carries the detail. Published twice by mistake? `verdict close` the extra
-   right away.
+   link in chat on its own line THE MOMENT publish returns, plus on the task
+   record's links if the workspace has one. Say what you need decided in one
+   sentence; the page carries the detail. Several pages in flight? Send each
+   link as it publishes; never hold links back until the others are ready.
+   Published twice by mistake? `verdict close` the extra right away.
 3. Wait. `verdict wait <id>` in the foreground when the review is the next
    step; otherwise continue other work and `verdict show <id>` when the user
    says they are done. Never leave a `wait` running in the background past
@@ -120,7 +121,7 @@ the same directory.
 
 | Symptom | Meaning | Do |
 |---|---|---|
-| exit 5 `cannot reach the server` | `VERDICT_URL` unset or the server is down | ask the user in chat instead; report the outage |
+| exit 5 `cannot reach the server` | `VERDICT_URL` unset or the server is down | first check whether the shell simply lacks `VERDICT_URL` (a session started before the variable was declared): read the server's public URL from the machine configuration and pass it explicitly (`VERDICT_URL=<url> verdict ...`); only when the server itself is unreachable ask the user in chat and report the outage |
 | exit 3 from `wait` | 8 h without Done | `verdict show`; ask the user; leave the review open |
 | exit 4 | the review was purged or the id is wrong | `verdict list --all` |
 | stale warning on publish | old reviews nobody finished | finish or close yours; report the others |
