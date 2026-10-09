@@ -26,11 +26,13 @@ Every Apple template (`ios-app`, `appstore-app`, `macos-app`) ships the same
 | `just deploy` | Local Release Ad Hoc export + phone install (`ios-app` fallback with a stated reason) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
 | `just ota` | Serve `build/<App>.ipa` as a tailnet install page (`ios-app` only; blocks while serving) | a verified, decrypted CI IPA or local export; Tailscale with HTTPS certificates |
 | `just logs` | Five minutes of device logs into `logs/` (Debug installs only) | `IOS_DEVICE_ID` |
+| `just install` | `macos-app`: Release build copied to `~/Applications/<App>.app` and opened, beside a released copy in `/Applications` | nothing; `MAC_INSTALL_HOST` for another Mac |
 
 Environment interface: `IOS_TEST_DESTINATION` (simulator, default in the
 justfile), `IOS_DERIVED_DATA` (keep it outside any cloud-synced folder),
 `IOS_INSTALL_HOST` (ssh host of the phone installer; unset = this Mac
-installs). Raw `xcodebuild` output is long: pipe it through `xcbeautify`
+installs), `MAC_INSTALL_HOST` (ssh host that gets the Mac pre-release build;
+unset = this Mac). Raw `xcodebuild` output is long: pipe it through `xcbeautify`
 when you read it yourself.
 
 ## Personal Ad Hoc CI
@@ -61,6 +63,20 @@ encrypted IPA, never standalone profiles, P12 files, private keys, keychains,
 or plaintext IPAs. The IPA necessarily contains an embedded provisioning
 profile with device IDs; retain it for installation and keep it out of logs.
 No persistent encryption key or recipient repository variable is needed.
+
+## Pre-release builds
+
+A change reaches the owner as a pre-release build before it becomes a release:
+
+1. Verify it yourself first (the ladder below: tests, preview, simulator or
+   the Mac).
+2. Install a pre-release build where the owner uses the app: iPhone `just
+   build` (Debug, through `IOS_INSTALL_HOST`); macOS `just install` (through
+   `MAC_INSTALL_HOST`).
+3. Tell the owner exactly what to check, and finish testing with them.
+4. Only once they confirm, suggest a release per the `semver` skill. Several
+   verified changes ship as one release. A pre-release install is not a
+   release: no version bump, no tag.
 
 ## Verification ladder
 
