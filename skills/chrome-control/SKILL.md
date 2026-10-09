@@ -456,9 +456,14 @@ a PNG with headless Chrome - a short-lived process, not the user's browser:
   --user-data-dir="$(mktemp -d)" http://localhost:5173/
 ```
 
-The PNG is written even when the process then fails to exit (observed Chrome
-139) - background it or wrap in a short timeout, then `pkill -f` the temp
-profile path. `--virtual-time-budget` gives client-side JS (charts, fetches)
+The PNG is written even when the process then fails to exit, and the
+launcher can exit before its child has written it (observed Chrome 154) -
+background it, wait for a complete file rather than for the process, then
+`pkill -f` the temp profile path (write the pattern without leading dashes;
+`pkill -f --user-data-dir=...` parses as an option). The viewport is shorter
+than `--window-size` (about 40 px on Chrome 154) and the uncovered strip
+repeats the top of the page, so for an exact output size render a taller
+window and crop. `--virtual-time-budget` gives client-side JS (charts, fetches)
 time to settle before capture. A page behind a login on the local real
 profile is `cdp-act.mjs`'s `{"shot":...}` step (Tier 2).
 
