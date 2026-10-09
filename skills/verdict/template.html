@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>TITLE: what this batch decides</title>
+<style>
+  /* Every color is a token, redefined once for dark mode: never a literal
+     color in a rule below, so light and dark can never disagree. */
+  :root { --fg: #111827; --muted: #6b7280; --bg: #ffffff; --card: #f3f4f6; --line: #e5e7eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg: #f3f4f6; --muted: #9ca3af; --bg: #111827; --card: #1f2937; --line: #374151; }
+  }
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 44rem; margin: 0 auto; padding: 1.25rem 1rem; color: var(--fg); background: var(--bg); }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+  .lead, .num, small { color: var(--muted); }
+  .lead { margin: 0 0 1.25rem; }
+  .card { background: var(--card); border-radius: .75rem; padding: 1rem 1.1rem; margin: 0 0 1.1rem; }
+  .card h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
+  .card p { margin: .3rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: .5rem 0; }
+  td, th { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  img { max-width: 100%; height: auto; border-radius: .5rem; border: 1px solid var(--line); }
+  .q { margin-top: .6rem; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>TITLE: what this batch decides</h1>
+<p class="lead">One sentence on where these came from. The recommended answer is dashed; Done accepts anything left untouched.</p>
+
+<section class="card" data-section="one">
+  <h2><span class="num">1.</span> The first decision, as a question</h2>
+  <p>The evidence: numbers, a short table, or a screenshot next to this file.</p>
+  <table>
+    <tr><th>Thing</th><th>Count</th><th>Proposed</th></tr>
+    <tr data-item="one-row-a"><td>Row the reviewer may want to annotate</td><td>12</td><td>keep</td></tr>
+  </table>
+  <div class="q" data-item="one" data-choices="recommended option|other option|third option" data-default="recommended option">The question in the reviewer's words</div>
+</section>
+
+<section class="card" data-section="two">
+  <h2><span class="num">2.</span> A design or screenshot</h2>
+  <img src="shot.png" alt="what the screenshot shows">
+  <div class="q" data-item="two" data-choices="ship it|change it (say what in a note)" data-default="ship it">Verdict</div>
+  <div class="q" data-item="two-note" data-input="anything to change?">Notes</div>
+</section>
+</body>
+</html>
