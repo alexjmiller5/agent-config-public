@@ -18,6 +18,7 @@ const flag = (n, d) => {const i = argv.indexOf(n); return i === -1 ? d : argv[i 
 const has = n => argv.includes(n);
 const urlFilter = flag('--url', '');
 const secs = Number(flag('--secs', 300));
+const watched = new Set();              // targetIds being captured
 const allTypes = has('--all');            // default: only XHR/fetch
 const raw = has('--raw');                 // default: redact credentials
 
@@ -108,8 +109,13 @@ ws.onmessage = async m => {
   // GOTCHA: sessionId for a new page arrives in params, not at top level.
   if (d.method === 'Target.attachedToTarget') {
     const sid = d.params.sessionId;
-    if (d.params.targetInfo.type === 'page' && !sessions.has(sid)) {
+    const info = d.params.targetInfo;
+    // Auto-attach reports every page in the browser; watch only matching
+    // pages and the popups they open, never other sessions' tabs.
+    const wanted = info.url.includes(urlFilter) || watched.has(info.openerId);
+    if (info.type === 'page' && wanted && !sessions.has(sid)) {
       sessions.add(sid);
+      watched.add(info.targetId);
       await send('Network.enable', {maxResourceBufferSize: 100e6, maxTotalBufferSize: 200e6}, sid);
     }
     return;
