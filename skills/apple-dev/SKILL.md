@@ -24,7 +24,7 @@ Every Apple template (`ios-app`, `appstore-app`, `macos-app`) ships the same
 | `just run` | Debug build, boot the simulator if needed, install, launch; prints `bundle=<id> simulator=<udid>` (macOS: opens the app from `build/`) | a simulator runtime |
 | `just build` | Debug build + install on the phone (automatic signing, readable logs) | `IOS_DEVELOPMENT_TEAM`, `IOS_DEVICE_ID`, Xcode signed into the team |
 | `just deploy` | Local Release Ad Hoc export + phone install (`ios-app` fallback with a stated reason) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
-| `just ota` | Serve `build/<App>.ipa` as a tailnet install page (`ios-app` only; blocks while serving) | a verified, decrypted CI IPA or local export; Tailscale with HTTPS certificates |
+| `just ota` | Add `build/<App>.ipa` to the machine's shared tailnet install page, `https://<tailnet name>/install/` (`ios-app` only; returns at once) | a verified, decrypted CI IPA or local export; Tailscale with HTTPS certificates |
 | `just logs` | Five minutes of device logs into `logs/` (Debug installs only) | `IOS_DEVICE_ID` |
 | `just install` | `macos-app`: Release build copied to `~/Applications/<App>.app` and opened, beside a released copy in `/Applications` | nothing; `MAC_INSTALL_HOST` for another Mac |
 
@@ -209,12 +209,16 @@ builds remain useful for readable device logs. Three install paths:
    fails on networks that isolate clients (train, hotel, guest Wi-Fi):
    `devicectl list devices` then shows the phone `unavailable`, its
    `tunnelState` unavailable. It cannot be aimed at a VPN address.
-2. **Tailnet install link.** `just ota` (`scripts/ota-install.sh`) serves the
-   verified Ad Hoc `.ipa` on the serving Mac's tailnet name over
-   HTTPS and prints a URL; the owner opens it in Safari on the phone and taps
-   Install. Any network, one tap. It blocks while serving (`OTA_TTL`, default
-   900 s): run it in the background, hand over the URL, and confirm with the
-   owner that the app updated.
+2. **Tailnet install link.** `just ota` (`scripts/ota-install.py`) adds the
+   verified Ad Hoc `.ipa` to the serving Mac's one install page,
+   `https://<tailnet name>/install/`, and prints that URL; the owner opens it
+   in Safari on the phone and taps Install. Any network, one tap. Every
+   agent's apps share the page: a new app is appended, a newer build of the
+   same app replaces its entry, entries expire after 48 h (`OTA_TTL_HOURS`),
+   and the page server removes itself once the list is empty. Hand over the
+   URL and confirm with the owner that the app updated. A project still
+   carrying `scripts/ota-install.sh` predates the shared page: copy the
+   template's `ota-install.py` in rather than running the old script.
 3. **Cable.** The owner plugs the phone into the installer; the install
    command the failed recipe printed then works.
 

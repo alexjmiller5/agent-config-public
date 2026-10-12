@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""Read-only GroupMe history: list groups and DMs, read a window, regex-search a whole conversation.
+
+Auth: GROUPME_TOKEN env var (dev.groupme.com > Access Token). Only GET requests are ever made.
+A conversation is a group id, or dm:<other_user_id> for a direct-message thread.
+Output: NDJSON on stdout; scan accounting on stderr.
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import UTC, datetime
+
+API = "https://api.groupme.com/v3"
+
+
+def get(path, params):
+    """GET an API path; returns the `response` payload, or None when GroupMe answers 304 (nothing more)."""
+    token = os.environ.get("GROUPME_TOKEN")
+    if not token:
+        sys.exit("groupme: set GROUPME_TOKEN (dev.groupme.com > Access Token)")
+    url = f"{API}{path}?{urllib.parse.urlencode(params)}"
+    for attempt in range(4):
+        try:
+            req = urllib.request.Request(url, headers={"X-Access-Token": token})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.load(r)["response"]
+        except urllib.error.HTTPError as e:
+            if e.code == 304:
+                return None
+            if e.code == 429 and attempt < 3:
+                time.sleep(5 * 2**attempt)
+                continue
+            sys.exit(f"groupme: HTTP {e.code} on {path}: {e.read()[:200].decode(errors='replace')}")
+
+
+def iso(ts):
+    return datetime.fromtimestamp(ts, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def epoch(s):
+    d = datetime.fromisoformat(s)
+    return (d if d.tzinfo else d.replace(tzinfo=UTC)).timestamp()
+
+
+def emit(row):
+    print(json.dumps(row, ensure_ascii=False), flush=True)
+
+
+def shape(m):
+    atts = []
+    for a in m.get("attachments") or []:
+        if a.get("type") in ("emoji", "mentions"):
+            continue
+        ref = a.get("url") or a.get("reply_id") or a.get("name")
+        atts.append(f"{a.get('type')} {ref}" if ref else str(a.get("type")))
+    return {
+        "id": m["id"],
+        "at": iso(m["created_at"]),
+        "name": m.get("name"),
+        "text": m.get("text") or "",
+        "likes": len(m.get("favorited_by") or []),
+        "attachments": atts,
+    }
+
+
+def conversation(conv):
+    if conv.startswith("dm:"):
+        return "/direct_messages", {"other_user_id": conv[3:]}, "direct_messages"
+    return f"/groups/{conv}/messages", {"limit": 100}, "messages"
+
+
+def walk(conv, before_id=None):
+    """Messages newest first, paging back until history runs out."""
+    path, base, key = conversation(conv)
+    while True:
+        params = dict(base, **({"before_id": before_id} if before_id else {}))
+        rows = (get(path, params) or {}).get(key) or []
+        if not rows:
+            return
+        yield from rows
+        before_id = rows[-1]["id"]
+
+
+def forward(conv, after_id):
+    """Group messages oldest first, starting right after a message id."""
+    path, base, key = conversation(conv)
+    if key != "messages":
+        sys.exit("groupme: --after-id works for groups only; page DMs back with --before-id")
+    while rows := (get(path, dict(base, after_id=after_id)) or {}).get(key):
+        yield from rows
+        after_id = rows[-1]["id"]
+
+
+def listing(path, paged=True):
+    page = 1
+    while rows := get(path, {"page": page, "per_page": 100, "omit": "memberships"} if paged else {}):
+        yield from rows
+        if not paged:
+            return
+        page += 1
+
+
+def cmd_groups(_):
+    for former, path, paged in ((False, "/groups", True), (True, "/groups/former", False)):
+        for g in listing(path, paged):
+            last = (g.get("messages") or {}).get("last_message_created_at")
+            emit(
+                {
+                    "id": g["id"],
+                    "name": g.get("name"),
+                    "former": former,
+                    "messages": (g.get("messages") or {}).get("count"),
+                    "last": iso(last) if last else None,
+                }
+            )
+
+
+def cmd_chats(_):
+    for c in listing("/chats"):
+        u, last = c.get("other_user") or {}, (c.get("last_message") or {}).get("created_at")
+        emit(
+            {
+                "id": f"dm:{u.get('id')}",
+                "name": u.get("name"),
+                "messages": c.get("messages_count"),
+                "last": iso(last) if last else None,
+            }
+        )
+
+
+def cmd_search(a):
+    pattern, since = re.compile(a.pattern, re.IGNORECASE), epoch(a.since) if a.since else None
+    scanned = hits = 0
+    oldest = None
+    for m in walk(a.conversation):
+        if since is not None and m["created_at"] < since:
+            break
+        scanned, oldest = scanned + 1, m["created_at"]
+        if pattern.search(m.get("text") or ""):
+            hits += 1
+            emit(shape(m))
+    print(
+        f"groupme: {hits} hits in {scanned} messages, back to {iso(oldest) if oldest is not None else '-'}",
+        file=sys.stderr,
+    )
+
+
+def cmd_history(a):
+    rows = forward(a.conversation, a.after_id) if a.after_id else walk(a.conversation, a.before_id)
+    for i, m in enumerate(rows):
+        if i >= a.limit:
+            break
+        emit(shape(m))
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(
+        prog="groupme", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    sub = p.add_subparsers(required=True)
+    sub.add_parser("groups", help="groups you are in, then groups you left (former=true)").set_defaults(fn=cmd_groups)
+    sub.add_parser("chats", help="direct-message threads; id is dm:<other_user_id>").set_defaults(fn=cmd_chats)
+    s = sub.add_parser("search", help="case-insensitive regex over every message text, newest first")
+    s.add_argument("conversation")
+    s.add_argument("pattern")
+    s.add_argument("--since", help="stop paging at this UTC date/datetime (YYYY-MM-DD[THH:MM:SS])")
+    s.set_defaults(fn=cmd_search)
+    h = sub.add_parser(
+        "history", help="read a window: latest, before a message (newest first), or after it (oldest first)"
+    )
+    h.add_argument("conversation")
+    w = h.add_mutually_exclusive_group()
+    w.add_argument("--before-id")
+    w.add_argument("--after-id")
+    h.add_argument("--limit", type=int, default=50)
+    h.set_defaults(fn=cmd_history)
+    a = p.parse_args(argv)
+    a.fn(a)
+
+
+if __name__ == "__main__":
+    main()
