@@ -43,7 +43,9 @@ template-default icon is a bug.** One rule for every platform:
   `<style>` rules), one palette that reads on light and dark backgrounds
   (Quick Look renders the dark branch of a `prefers-color-scheme` style).
 - **Rasterize with Quick Look**, no dependencies:
-  `qlmanage -t -s 1024 -o <dir> icon.svg`.
+  `qlmanage -t -s 1024 -o <dir> icon.svg`. Quick Look flattens transparency
+  onto white, so art that must keep transparent corners (the macOS rounded
+  square) goes through `rsvg-convert` instead (`nix shell nixpkgs#librsvg`).
 - **Judge it small.** Look at the 16-32 px rendering; detail that disappears
   there comes out.
 - **Verify where it is shown**: the browser tab, the home screen, the Dock,
