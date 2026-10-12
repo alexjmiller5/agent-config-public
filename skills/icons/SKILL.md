@@ -1,6 +1,6 @@
 ---
 name: icons
-description: the user's icon standard - which set to use for every icon job (mono UI, colorful/object, brand logos), all delivered via Iconify URLs. Use whenever picking an icon for a website/app, setting a Notion page icon, adding a brand/app logo, choosing 1Password item icons, or any task that needs an icon asset.
+description: the user's icon standard - which set to use for every icon job (mono UI, colorful/object, brand logos), all delivered via Iconify URLs, plus the one design rule for a project's own icon (website favicon, iOS/macOS app icon). Use whenever picking an icon for a website/app, designing a favicon or an app icon, setting a Notion page icon, adding a brand/app logo, choosing 1Password item icons, or any task that needs an icon asset.
 ---
 
 # Icon Standard
@@ -29,6 +29,35 @@ https://api.iconify.design/{prefix}:{name}.svg?color=%23{hex}
 - In web projects, use the npm package (`@tabler/icons-svelte`), not hotlinks.
 - Hotlinked icons (Notion etc.): if api.iconify.design ever flakes, mirror the
   used SVGs to an R2 bucket at stable paths - same slugs, new host.
+
+## A project's own icon (favicon, app icon)
+
+**Every site and app ships its own icon. A missing, blank, stock or
+template-default icon is a bug.** One rule for every platform:
+
+- **Depict THIS project: its subject and its function together.** A ticket
+  tracker for a festival gets the festival's logo merged with a ticket glyph,
+  not a bare ticket. The sets in the table are raw material to compose,
+  recolor and overlay into one SVG, never the finished icon on their own.
+- **One SVG master**, explicit `fill`/`stroke` attributes (rasterizers ignore
+  `<style>` rules), one palette that reads on light and dark backgrounds
+  (Quick Look renders the dark branch of a `prefers-color-scheme` style).
+- **Rasterize with Quick Look**, no dependencies:
+  `qlmanage -t -s 1024 -o <dir> icon.svg`.
+- **Judge it small.** Look at the 16-32 px rendering; detail that disappears
+  there comes out.
+- **Verify where it is shown**: the browser tab, the home screen, the Dock,
+  Finder. A letter monogram, a grey plate or a white halo is a failure.
+
+| Platform | What ships | Shape |
+|---|---|---|
+| Website | `favicon.svg` for the tab, plus `icon-192/512.png` and a 180 px `apple-touch-icon.png` for home screens | favicon transparent; touch icons opaque full-bleed squares (the `cf-site` template renders them from the favicon) |
+| iOS / iPadOS | one 1024x1024 PNG in `AppIcon.appiconset` (idiom `universal`, platform `ios`) | opaque full-bleed square, no transparency, no rounded corners: iOS applies the mask |
+| macOS | one 1024x1024 PNG listed for every `mac` slot of `AppIcon.appiconset` | macOS 26 shows every icon inside its rounded square and shrinks art that is not one onto a grey plate: draw the rounded square itself (Apple's grid: 824 px centered on the 1024 canvas) and check the Dock |
+| iOS + macOS target | both idioms in one set | an `ios`-only set leaves the Mac app without a Dock icon |
+
+The Apple templates gate it: once the app is named, `just check` fails
+while the icon is missing or still the placeholder.
 
 ## Notion page icons
 
