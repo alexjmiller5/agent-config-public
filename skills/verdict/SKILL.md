@@ -41,10 +41,15 @@ verdict gc                   # end of session: purge, kill orphan waits, list st
    sentence; the page carries the detail. Several pages in flight? Send each
    link as it publishes; never hold links back until the others are ready.
    Published twice by mistake? `verdict close` the extra right away.
-3. Wait. `verdict wait <id>` in the foreground when the review is the next
-   step; otherwise continue other work and `verdict show <id>` when the user
-   says they are done. Never leave a `wait` running in the background past
-   the session: if you backgrounded one, kill it before you finish.
+3. Arm a wake-up right after publishing. Where the environment has a waker
+   that messages your session when a command returns (a Herdr pane waker
+   such as `agent-wake verdict <id>`), arm it and keep working: Done reaches
+   you without polling, and the page tells the reviewer an agent is
+   listening. Without one, `verdict wait <id>` in the foreground when the
+   review is the next step; otherwise continue other work and `verdict show
+   <id>` when the user says they are done. Never leave a `wait` running in
+   the background past the session: if you backgrounded one, kill it before
+   you finish.
 4. Read the answers (shape below), apply them, report what you applied.
 5. `verdict close <id>`. A review you consumed and did not close shows up as
    stale for everyone until it is purged.
@@ -67,7 +72,7 @@ warning; do not suppress it.
 | `data-section="name"` | the element gets an "accept this section's recommendations" button acting on every `data-item` inside it |
 
 Everything else is still annotatable: the reviewer can tap any element in
-comment mode and type a note. Done fills unanswered choices with their
+comment mode (Ctrl+Option+C toggles it) and type a note. Done fills unanswered choices with their
 defaults, so always put the recommendation in `data-default`.
 
 ```html
