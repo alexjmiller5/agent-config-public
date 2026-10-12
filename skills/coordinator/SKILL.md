@@ -78,7 +78,7 @@ your context; the spec is all it knows.
 - The skills to load first.
 - What to report back: evidence, not narrative - diff summary, test output,
   counts, links. "Ends every turn with status and what it needs."
-- What it must NOT do: no task-status writes (you own Notion), no
+- What it must NOT do: no task-status writes (you own the task records), no
   deploys, no pushes to a deploying branch unless the spec says so.
 
 ## Review
