@@ -8,8 +8,9 @@ description: Build, run, test, verify and install iOS and macOS apps as an agent
 How an agent builds, verifies, and delivers an Xcode project. Local
 development uses the **build host** named in the machine sheet (Xcode,
 simulators, the `xcode` MCP server). The sheet also identifies the **phone
-installer**, the Mac paired to the owner's iPhone. Personal Ad Hoc release
-signing runs on a macOS CI runner.
+installer**, the Mac paired to the owner's iPhone. While iterating, builds
+are signed and installed from the build host; CI signs once the owner
+confirms iteration is done.
 
 ## Verbs
 
@@ -23,7 +24,7 @@ Every Apple template (`ios-app`, `appstore-app`, `macos-app`) ships the same
 | `just test` | Unit tests on a simulator (iOS) or the Mac (macOS) | a simulator runtime |
 | `just run` | Debug build, boot the simulator if needed, install, launch; prints `bundle=<id> simulator=<udid>` (macOS: opens the app from `build/`) | a simulator runtime |
 | `just build` | Debug build + install on the phone (automatic signing, readable logs) | `IOS_DEVELOPMENT_TEAM`, `IOS_DEVICE_ID`, Xcode signed into the team |
-| `just deploy` | Local Release Ad Hoc export + phone install (`ios-app` fallback with a stated reason) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
+| `just deploy` | Local Release Ad Hoc export + phone install (`ios-app`; a host without the identity in its keychain uses `scripts/sign-ios.py` with the signing material in the environment) | `+ IOS_PROFILE`, the Apple Distribution identity in the keychain |
 | `just ota` | Add `build/<App>.ipa` to the machine's shared tailnet install page, `https://<tailnet name>/install/` (`ios-app` only; returns at once) | a verified, decrypted CI IPA or local export; Tailscale with HTTPS certificates |
 | `just logs` | Five minutes of device logs into `logs/` (Debug installs only) | `IOS_DEVICE_ID` |
 | `just install` | `macos-app`: Release build copied to `~/Applications/<App>.app` and opened, beside a released copy in `/Applications` | nothing; `MAC_INSTALL_HOST` for another Mac |
@@ -34,6 +35,28 @@ justfile), `IOS_DERIVED_DATA` (keep it outside any cloud-synced folder),
 installs), `MAC_INSTALL_HOST` (ssh host that gets the Mac pre-release build;
 unset = this Mac). Raw `xcodebuild` output is long: pipe it through `xcbeautify`
 when you read it yourself.
+
+## Iterate locally, CI after the owner confirms
+
+CI is not slow for a small app (a few minutes) but is for big ones, for every
+notarized macOS release (notarization alone can take most of an hour), and
+whenever macOS runners queue. So:
+
+1. While iterating, build, sign and install from the build host: `just
+   build`, `just deploy`, or `scripts/sign-ios.py` into `build/` plus the
+   install or `just ota`; macOS `just install`. Never push, tag or dispatch
+   CI only to get an installable build. Request a secret-manager unlock up
+   front when local signing needs one.
+2. Before a long local build: at least 15 GB free, one build at a time on a
+   shared host (its build lock), `COMPILATION_CACHE_ENABLE_CACHING=NO`, and
+   delete your own products afterwards.
+3. Ask the owner whether iteration is done. Only then dispatch the Ad Hoc
+   workflow or push the release tag, and install from the CI artifact. Wait
+   on the run with a waker if the environment has one (one API call every
+   few minutes), never with parallel `gh run watch` loops.
+4. Use CI earlier only when the build host is short on disk or overloaded or
+   the signing material cannot be reached. Developer ID notarization and
+   App Store/TestFlight uploads are CI-only.
 
 ## Personal Ad Hoc CI
 
@@ -195,8 +218,8 @@ xcrun devicectl device process launch --device <udid> --console <bundle-id>
 
 ## Phone install
 
-CI produces the artifact; the paired phone installer or an OTA page delivers
-it. Download, decrypt, and verify a CI IPA before these steps. Local Debug
+A local build (while iterating) or the verified CI artifact (after the owner
+confirms) reaches the phone through the paired installer or an OTA page. Download, decrypt, and verify a CI IPA before these steps. Local Debug
 builds remain useful for readable device logs. Three install paths:
 
 1. **Local network (default, try it first).** `IOS_INSTALL_HOST` makes `just
