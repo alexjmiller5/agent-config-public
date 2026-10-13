@@ -22,8 +22,8 @@ stdout, scan accounting on stderr. Searches run against a local archive
 - Pass it as `GROUPME_TOKEN` for the command. A private companion skill, if
   present, says where your setup keeps it.
 - **First run on a machine: build the archive.** `$G sync all` pages every
-  group you are in into the archive, at about 1,000 requests and 15 minutes
-  per 100,000 messages. Run it in the background (or as a launchd one-shot
+  group you are in into the archive. A 300,000-message account across 40
+  groups took about 30 minutes and 225 MB. Run it in the background (or as a launchd one-shot
   where shells die after a few hours), and check whether it is finished
   before you promise fast searches. It resumes where it stopped, so rerun it
   after an interruption. After that, each search fetches only the newest
@@ -78,7 +78,7 @@ show up, but an edit deep in history only appears after a rebuild.
 | DM threads | Works (20 per page, so long threads are slower) |
 | Groups you left | `groups` lists them, but their messages answer HTTP 404. Rejoin in the app, or use GroupMe's data export |
 | Big groups | The first search or sync pages the whole history: 1,000 requests and about 15 minutes per 100,000 messages. After that, searches take under a second |
-| Search across everything | `search all` checks 6 groups at a time; fast once `sync all` has run |
+| Search across everything | `search all` over 300,000 archived messages takes about 8 seconds, mostly the per-group refresh |
 | Images, polls, events | Only image and file URLs and reply ids show in `attachments`; poll and event bodies are not searched |
 | Topics (subgroups) | Not searched (`/groups/<id>/subgroups` lists them) |
 | Sending, liking, reactions | Deliberately absent: posting is outward-facing |
