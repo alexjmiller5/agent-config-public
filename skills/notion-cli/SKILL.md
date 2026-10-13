@@ -1,6 +1,6 @@
 ---
 name: notion-cli
-description: Notion operations via the official `ntn` CLI - query data sources, create/update pages, read/write page content as Markdown, search, and filter. Use when any agent needs to interact with Notion programmatically. Covers authentication, CLI commands, property formats, filter syntax, pagination, and rate limits. For the user's specific workspace structure (DB IDs, relations, schemas), use the notion-workspace skill alongside this one.
+description: Notion operations via the official `ntn` CLI - query data sources, create/update pages, read/write page content as Markdown, search, and filter. Use when any agent needs to interact with Notion programmatically. Covers authentication, CLI commands, property formats, filter syntax, pagination, and rate limits. For the user's specific workspace structure (DB IDs, relations, schemas), consult the user's current data catalog.
 ---
 
 # Notion CLI / API Skill
@@ -15,7 +15,7 @@ Auth is a Notion internal-integration secret, stored wherever your setup keeps s
 export NOTION_API_TOKEN=$(op read "op://<vault-id>/<item-id>/credential")
 ```
 
-Export once per shell, not per command (secret-manager rate limits). If a workspace-map skill exists in your setup (e.g. `notion-workspace`), the concrete reference lives there.
+Export once per shell, not per command (secret-manager rate limits). Keep concrete credential references in private authentication instructions.
 
 - The integration only sees pages **connected** to it in Notion. A `403`/object-not-found on a page the user clearly has means the connection is missing - the user adds it via the page's ••• menu → Connections.
 - Alternative: a personal access token from https://www.notion.so/developers/tokens also works in `NOTION_API_TOKEN` (acts as the user's own user, no connections needed, max 1yr expiry) - not currently used.
@@ -262,4 +262,4 @@ Run these steps with the user when the **Last updated** date at the top is more 
 2. **Read the changelog** at https://developers.notion.com/page/changelog for changes since the Last updated date. Apply any endpoint/param/behavior changes to this SKILL.md.
 3. **Verify auth still works**: `ntn api v1/users/me` with `NOTION_API_TOKEN` exported - if it fails, fix the 1Password reference in the Authentication section.
 4. **Bump the Last updated date** at the top of this file to today.
-6. Suggest also self-updating the `notion-workspace` skill if it's stale.
+6. Keep workspace-specific routing in the user's private data catalog.

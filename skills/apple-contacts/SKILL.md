@@ -150,7 +150,7 @@ Two footguns it removes: yearless birthdays come back as
 
 The People DB holds the user's standardized person format - get its
 data_source_id and schema from the workspace-map skill in your setup
-(e.g. `notion-workspace`) and read that before writing to it. Ad-hoc import flow:
+(e.g. `soma-map`) and read that before writing to it. Ad-hoc import flow:
 
 1. Bulk-export via the sqlite query above (add socials/URLs from
    [references/sqlite.md](references/sqlite.md) as needed).

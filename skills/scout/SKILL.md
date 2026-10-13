@@ -17,7 +17,7 @@ Produce a decision-grade landscape briefing on an industry / technology / tool c
    - Adjacent-or-avoid - existing projects to steal from, and alternatives that eliminate the need entirely (the Teller.io-instead-of-scraping class of find)
 
    **Quick mode** (`/scout quick <topic>`): skip the deep-research workflow. Research the same lenses yourself with inline WebSearch/WebFetch (a few searches per lens; verify maintenance dates on anything you'd recommend). No adversarial verification - claims are single-sourced.
-4. **Deliver** - write the briefing (structure below) to a **Notion notes page** if your setup has one (see the `notion-workspace` skill where available; otherwise a local markdown file), titled `Scout: <topic>`, dated in the body (landscapes rot - a reader must see how stale it is). Quick-mode briefings add to that dated header line: *"Quick run - single-sourced, no verification pass; re-scout in full before committing."* Link it to the originating task/project relation when there is one. End with the Notion link + TL;DR in chat.
+4. **Deliver** - write the briefing (structure below) to a **Notion notes page** if your setup has one (see the `soma-map` skill where available; otherwise a local markdown file), titled `Scout: <topic>`, dated in the body (landscapes rot - a reader must see how stale it is). Quick-mode briefings add to that dated header line: *"Quick run - single-sourced, no verification pass; re-scout in full before committing."* Link it to the originating task/project relation when there is one. End with the Notion link + TL;DR in chat.
 
 ## Research engine
 
