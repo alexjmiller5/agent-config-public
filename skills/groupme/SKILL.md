@@ -58,8 +58,8 @@ name exits listing the candidates. A message row is
 | Groups you are in, full history | Works, back to the group's first message |
 | DM threads | Works (20 per page, so long threads are slower) |
 | Groups you left | `groups` lists them, but their messages answer HTTP 404. Rejoin in the app, or use GroupMe's data export |
-| Big groups | Paging only: about 1,000 requests per 100,000 messages, minutes per search. Bound it with `--since` |
-| Search speed across everything | `search all` scans 6 groups at a time; still minutes on large histories |
+| Big groups | Paging only: 1,000 requests per 100,000 messages, about 15 minutes. Bound it with `--since` |
+| Search speed across everything | `search all` scans 6 groups at a time, but the biggest group sets the pace: 15 minutes for one 100,000-message group |
 | Images, polls, events | Only image and file URLs and reply ids show in `attachments`; poll and event bodies are not searched |
 | Topics (subgroups) | Not searched (`/groups/<id>/subgroups` lists them) |
 | Sending, liking, reactions | Deliberately absent: posting is outward-facing |
