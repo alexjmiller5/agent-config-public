@@ -1,21 +1,23 @@
 ---
 name: groupme
-description: Use when a task touches GroupMe in any way - searching or reading group chats or DMs for historical reference ("what did the group chat say about X", "find the message about the refund"), listing groups or DM threads, or anything mentioning GroupMe or api.groupme.com. Load BEFORE calling the GroupMe API.
+description: Use when a task touches GroupMe in any way - searching or reading group chats or DMs for historical reference ("what did the group chat say about X", "find the message about the refund", "which chat was that in"), listing groups or DM threads, or anything mentioning GroupMe or api.groupme.com. Load BEFORE calling the GroupMe API.
 ---
 
 # GroupMe - read and search chat history from the shell
 
-GroupMe has a REST API (`https://api.groupme.com/v3`) but no search endpoint
-and no maintained CLI. `scripts/groupme` fills the gap: stdlib Python, GET
-requests only, NDJSON on stdout, scan accounting on stderr.
+GroupMe's official REST API (`https://api.groupme.com/v3`, the same one its
+web app uses) serves full history for every group you are still in and every
+DM thread, but it has no search endpoint, and neither does the web app.
+`scripts/groupme` fills the gap: stdlib Python, GET requests only, NDJSON on
+stdout, scan accounting on stderr.
 
 ## Setup
 
-- **Token:** sign in at dev.groupme.com, then click **Access Token** (top
-  right). Accounts that sign in with Microsoft, Apple or Facebook must first
-  set a GroupMe password ("Forgot password") before the developer site accepts
-  the login. The token has full account access, including sending; the script
-  only reads.
+- **Token:** sign in at dev.groupme.com (email or phone plus password, then
+  a one-time PIN by SMS), open the account menu > **Access token**, then
+  **Show**. Accounts that sign in with Microsoft, Apple or Google need a
+  GroupMe password first ("Forgot password"). The token has full account
+  access, including sending; the script only reads.
 - Pass it as `GROUPME_TOKEN` for the command. A private companion skill, if
   present, says where your setup keeps it.
 
@@ -23,35 +25,50 @@ requests only, NDJSON on stdout, scan accounting on stderr.
 
 ```bash
 G="python3 ~/.claude/skills/groupme/scripts/groupme"
-$G groups                                    # {id,name,former,messages,last}: active groups, then groups you left
-$G chats                                     # DM threads; id is dm:<other_user_id>
-$G search <id> 'refund|reimburs' [--since 2024-01-01]   # case-insensitive regex over message text, newest first
-$G history <id> --before-id <msg> --limit 20 # context older than a hit (newest first)
-$G history <id> --after-id <msg> --limit 20  # context newer than a hit (oldest first, groups only)
-$G history <id> --limit 50                   # latest messages
+$G groups                                     # {id,name,former,messages,last}: groups you are in, then groups you left
+$G chats                                      # DM threads; id is dm:<other_user_id>
+$G search <conv> 'refund|reimburs'            # case-insensitive regex over message text, newest first
+$G search <conv> '' --from 'sam'              # everything one sender wrote ('' matches all)
+$G search all 'refund' --since 2024-01-01     # every group you are in; hits carry "group"
+$G history <conv> --before-id <msg> --limit 20   # context older than a hit (newest first)
+$G history <conv> --after-id <msg> --limit 20    # context newer than a hit (oldest first, groups only)
 ```
 
-A message row is `{id, at (UTC), name, text, likes, attachments}`. Pipe to
-`jq` for sender filters (`select(.name|test("Sam"))`).
+`<conv>` is a group id, `dm:<user id>`, or a piece of a group's name that
+matches exactly one group you are in (`'book club'`); an ambiguous
+name exits listing the candidates. A message row is
+`{id, at (UTC), name, text, likes, attachments}`.
 
 ## Working method
 
-1. Resolve the conversation by name from `groups` / `chats`. Never guess an id.
-2. `search` with a broad regex (stems and synonyms: `refund|reimburs|venmo`).
-   The stderr line says how far back it scanned; zero hits over the full
-   history is a real negative, zero hits under `--since` is not.
+1. Name the conversation, or run `search all` when you don't know which
+   chat it was in.
+2. Search with a broad regex (stems and synonyms: `refund|reimburs|venmo`).
+   People rarely use the word you expect, so pair a topic with a person
+   (`--from`) or a money word. The stderr line says how far back each scan
+   went; zero hits over the full history is a real negative, zero hits under
+   `--since` is not.
 3. Read around each hit with `history --before-id` / `--after-id` before
    answering. A single message rarely carries the whole story.
 
+## Where it works and where it doesn't
+
+| Need | Status |
+|---|---|
+| Groups you are in, full history | Works, back to the group's first message |
+| DM threads | Works (20 per page, so long threads are slower) |
+| Groups you left | `groups` lists them, but their messages answer HTTP 404. Rejoin in the app, or use GroupMe's data export |
+| Big groups | Paging only: about 1,000 requests per 100,000 messages, minutes per search. Bound it with `--since` |
+| Search speed across everything | `search all` scans 6 groups at a time; still minutes on large histories |
+| Images, polls, events | Only image and file URLs and reply ids show in `attachments`; poll and event bodies are not searched |
+| Topics (subgroups) | Not searched (`/groups/<id>/subgroups` lists them) |
+| Sending, liking, reactions | Deliberately absent: posting is outward-facing |
+
+GroupMe's own data export (Settings > Export Data) emails a zip of every
+conversation as JSON. Use it for bulk analysis or for groups you left.
+
 ## Gotchas
 
-- Search pages the entire conversation: 100 messages per request in groups,
-  20 in DMs. A 20,000-message group takes about 200 requests. Bound it with
-  `--since` when the era is known.
-- Only message text is searched. Photo-only messages have empty text, and
-  poll and event bodies are not covered.
 - HTTP 429 backs off and retries three times, then exits.
-- Nothing here posts. Sending to a group is outward-facing and not part of
-  this skill.
-- For bulk analysis of every chat at once, GroupMe's own data export
-  (Settings > Export Data) emails a zip of all conversations as JSON.
+- Group names change and repeat, so resolve them each time.
+- Message ids are not strictly ordered by time; trust `at`, not id order.

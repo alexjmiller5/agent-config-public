@@ -124,5 +124,55 @@ class ListTests(unittest.TestCase):
         )
 
 
+class Router:
+    """Routes /groups listings and per-group message paths to fakes; a group id mapped to an int raises that HTTP code."""
+
+    def __init__(self, groups, messages):
+        self.groups, self.messages, self.calls = groups, messages, []
+
+    def __call__(self, path, params):
+        self.calls.append(path)
+        if path == "/groups":
+            return self.groups if int(params.get("page", 1)) == 1 else []
+        if path == "/groups/former":
+            return []
+        gid = path.split("/")[2]
+        api = self.messages[gid]
+        if isinstance(api, int):
+            raise gm.ApiError(api, path, "")
+        return api(path, params)
+
+
+def group(i, name):
+    return {"id": i, "name": name, "messages": {"count": 1, "last_message_created_at": 0}}
+
+
+class FilterAndScopeTests(unittest.TestCase):
+    def test_sender_filter_with_empty_pattern(self):
+        api = FakeAPI([msg(1, "a", name="Pat Lee"), msg(2, "b", name="Sam"), msg(3, "c", name="pat q")])
+        self.assertEqual([h["id"] for h in run(["search", "1", "", "--from", "ALEX"], api)], ["3", "1"])
+
+    def test_group_resolved_by_name(self):
+        r = Router([group("7", "Board Room 2023"), group("8", "Planning")], {"7": FakeAPI([msg(1, "refund")])})
+        self.assertEqual([h["id"] for h in run(["search", "BOARD ROOM", "refund"], r)], ["1"])
+        self.assertIn("/groups/7/messages", r.calls)
+
+    def test_ambiguous_name_exits(self):
+        r = Router([group("7", "EC Fall"), group("8", "EC Spring")], {})
+        with self.assertRaises(SystemExit):
+            run(["search", "ec", "x"], r)
+
+    def test_search_all_tags_group_and_survives_errors(self):
+        r = Router(
+            [group("7", "One"), group("8", "Gone"), group("9", "Two")],
+            {"7": FakeAPI([msg(1, "refund"), msg(2, "no")]), "8": 404, "9": FakeAPI([msg(5, "Refund!")])},
+        )
+        hits = run(["search", "all", "refund"], r)
+        self.assertEqual(sorted((h["group"], h["id"]) for h in hits), [("One", "1"), ("Two", "5")])
+
+    def test_left_group_404_explains(self):
+        self.assertIn("left", str(gm.ApiError(404, "/groups/1/messages", "")))
+
+
 if __name__ == "__main__":
     unittest.main()
