@@ -73,7 +73,7 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(api.calls[0], ("/direct_messages", {"other_user_id": "42"}))
 
     def test_message_shape(self):
-        m = msg(7, "see pic", name="Alex", ts=0)
+        m = msg(7, "see pic", name="Pat", ts=0)
         m["attachments"] = [{"type": "image", "url": "https://i.groupme.com/x"}]
         m["favorited_by"] = ["1", "2"]
         (hit,) = run(["search", "1", "pic"], FakeAPI([m]))
@@ -82,7 +82,7 @@ class SearchTests(unittest.TestCase):
             {
                 "id": "7",
                 "at": "1970-01-01T00:00:00Z",
-                "name": "Alex",
+                "name": "Pat",
                 "text": "see pic",
                 "likes": 2,
                 "attachments": ["image https://i.groupme.com/x"],
@@ -150,7 +150,7 @@ def group(i, name):
 class FilterAndScopeTests(unittest.TestCase):
     def test_sender_filter_with_empty_pattern(self):
         api = FakeAPI([msg(1, "a", name="Pat Lee"), msg(2, "b", name="Sam"), msg(3, "c", name="pat q")])
-        self.assertEqual([h["id"] for h in run(["search", "1", "", "--from", "ALEX"], api)], ["3", "1"])
+        self.assertEqual([h["id"] for h in run(["search", "1", "", "--from", "PAT"], api)], ["3", "1"])
 
     def test_group_resolved_by_name(self):
         r = Router([group("7", "Board Room 2023"), group("8", "Planning")], {"7": FakeAPI([msg(1, "refund")])})
