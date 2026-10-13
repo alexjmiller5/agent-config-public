@@ -38,9 +38,16 @@ when you read it yourself.
 
 ## Iterate locally, CI after the owner confirms
 
-CI is not slow for a small app (a few minutes) but is for big ones, for every
-notarized macOS release (notarization alone can take most of an hour), and
-whenever macOS runners queue. So:
+Measured on the build host (Apple silicon, 2026-10) against GitHub-hosted
+runners for the same apps:
+
+| Build | Local cold / warm | CI, push to artifact (median, worst) |
+|---|---|---|
+| Small iOS app, signed Ad Hoc `.ipa` | 13 s (12 s unsigned archive, 8 s warm) | 2.2 min, 4.8 min |
+| Large multi-target iOS app | 48 s / 3 s | 6 min, 44 min (queued behind other runs) |
+| Large macOS app, Release | 91 s / 2 s | 30 min, 2 h (signing + notarization) |
+
+Local wins by one to two orders of magnitude while iterating. So:
 
 1. While iterating, build, sign and install from the build host: `just
    build`, `just deploy`, or `scripts/sign-ios.py` into `build/` plus the
