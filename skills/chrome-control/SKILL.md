@@ -58,7 +58,7 @@ node $S/cdp-group.mjs "claude: <task>" https://example.com --port $P
 ```
 
 If the configured host cannot be resolved or the SSH tunnel fails, diagnose
-connectivity before declaring the mini unavailable:
+connectivity before declaring the host unavailable:
 
 ```bash
 H="$CHROME_CONTROL_HOST"
@@ -148,7 +148,7 @@ user - see "Close what you open".
 
 ## Tier 1 - `chrome-cli` (no setup, no prompts)
 
-Already installed and declared in nix-config. Talks to Chrome over AppleScript,
+Install `chrome-cli` with your package manager. It talks to Chrome over AppleScript,
 so it reads the **tabs the user actually has open** with zero configuration.
 
 ```bash
@@ -178,10 +178,10 @@ chrome-cli execute 'var a=[...document.querySelectorAll("a")]
 **This is the right answer for "pull the HTML from the tab I have open."**
 Don't reach for CDP for that.
 
-Requires View > Developer > **"Allow JavaScript from Apple Events"** (already
-on in the user's profile; `source` and `execute` are built on it, `list tabs` is
-not). Also needs an Automation TCC grant for the calling process - already
-granted for Claude's shell.
+Requires View > Developer > **"Allow JavaScript from Apple Events"** (once per
+profile; `source` and `execute` are built on it, `list tabs` is not). Also
+needs an Automation TCC grant for the calling process (macOS asks once). The
+machine context says whether both are already in place.
 
 Limits: no network traffic, no response bodies, no console history, no cookies.
 Those are Tier 2.
@@ -193,12 +193,12 @@ Those are Tier 2.
 This is the only way to capture **authenticated** API traffic. It attaches to
 the user's everyday Chrome - their real cookies, their open tabs.
 
-### One-time setup (already done on the MacBook)
+### One-time setup
 
 the user ticks **"Allow remote debugging for this browser instance"** at
 `chrome://inspect/#remote-debugging`. This is a browser-wide preference that
-persists across restarts forever. Codified in nix-config
-(`home/macos/chrome-remote-debugging.nix`) so a fresh machine gets it.
+persists across restarts forever. Declare it in your machine configuration
+if you manage Chrome preferences declaratively, so a fresh machine gets it.
 
 Chrome then listens on **127.0.0.1:9222** and writes the endpoint to
 `~/Library/Application Support/Google/Chrome/DevToolsActivePort` (line 1 =

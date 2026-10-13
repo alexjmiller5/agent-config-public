@@ -6,33 +6,27 @@ description: Use when controlling Spotify from the terminal or scripts on the us
 # Spotify (spotify_player)
 
 Binary: `spotify_player` - TUI with no args, CLI subcommands for scripting.
-Installed via nix-config (see `dev-env`).
 For full syntax trust `spotify_player -h` / `spotify_player <cmd> -h` over memory.
+Spotify Premium required.
 
-## Auth - no per-machine step
+## Auth
 
-`spotify_player` on PATH is an op-authed wrapper (nix-config
-`home/spotify-player.nix`, same family as the gh/gog/wacli wrappers). Its
-auth files - `credentials.json` (librespot session) and one
-`<client_id>_token.json` per Web API client (token + refresh token) - live
-in the "<credentials item>" 1Password item and are handed
-to the binary through a per-call mktemp cache folder (`-C`) deleted on
-exit. Any change (a token refresh, a login) is written back, so every
-machine is authed as soon as the item is; nothing to run on a new machine.
-Caller-set `-C` bypasses the round-trip. Spotify Premium required.
+`spotify_player` keeps its auth files in its cache folder (`-C`, default
+`~/.cache/spotify-player`): `credentials.json` (the librespot session) and one
+`<client_id>_token.json` per Web API client (token + refresh token). A
+machine can wrap the binary to hand these files in through a temporary `-C`
+folder; when a private auth companion skill (`spotify-auth`) is installed,
+load it for where this machine keeps them and how a re-login is saved.
 
-- **Web API client = your own Spotify developer app** ("<oauth-client item>"
-  item; the wrapper passes it as `-o client_id=`). The binary is built from
-  upstream master, whose custom-client mode falls back to the built-in
-  ncspot client on 4xx and routes `search`, `me/playlists`, `playlists/`
-  to ncspot always (`ncspot_only_get_endpoints`). Reason: ncspot alone
-  gets throttled for hours (429 on every call); a post-2024 dev app alone
-  breaks on stripped fields (`missing field followers/popularity`). Never
-  copy either client id into config by hand - the wrapper owns it.
-- **Re-login (item reset, refresh token expired - 180 days in development
-  mode - or the wrapper prints its write-back WARNING):**
-  `spotify_player authenticate` through the wrapper re-mints the Web API
-  tokens (two browser consents: the dev app and "Spotify for Desktop";
+- **Web API client = your own Spotify developer app**, passed as
+  `-o client_id=<id>`. Upstream master's custom-client mode falls back to the
+  built-in ncspot client on 4xx and routes `search`, `me/playlists`,
+  `playlists/` to ncspot always (`ncspot_only_get_endpoints`). Reason: ncspot
+  alone gets throttled for hours (429 on every call); a post-2024 dev app
+  alone breaks on stripped fields (`missing field followers/popularity`).
+- **Re-login (auth files reset, or the refresh token expired - 180 days in
+  development mode):** `spotify_player authenticate` re-mints the Web API
+  tokens (two browser consents: your dev app and "Spotify for Desktop";
   click Agree or drive `button[data-testid=auth-accept]` with
   chrome-control). Only `credentials.json` needs a TUI launch (a session
   connect writes it; `authenticate` never does) - it is minted once and is
@@ -62,5 +56,5 @@ Caller-set `-C` bypasses the round-trip. Spotify Premium required.
 `spotify_player -d` works (nix build compiles daemon + streaming + rodio) but
 **not with media control, which is on by default** - set
 `enable_media_control = false` (config or `-o`) before daemonizing. Running it
-persistently means a declared launchd agent (see `dev-env`), never raw
-`launchctl`.
+persistently means a launchd agent declared in your machine configuration,
+never raw `launchctl`.

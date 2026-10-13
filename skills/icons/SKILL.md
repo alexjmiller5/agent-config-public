@@ -63,17 +63,13 @@ while the icon is missing or still the placeholder.
 
 ## Notion page icons
 
-**Every Notion page an agent creates gets an icon, always** (per the
-`notion-workspace` skill's icons rule). Choose by subject via the table above;
-for DB entries follow the DB's existing icon pattern (query siblings if unsure).
-Assignments are recorded in the `<icon-manifest repo>` repo - re-run its sync
-after bulk icon changes.
+Whether a new page gets an icon follows the workspace's own rule (a private
+workspace skill may define it). When it does, choose by subject via the table
+above; for DB entries follow the DB's existing icon pattern (query siblings if
+unsure).
 
-**Workspace custom emoji are reserved for irreplaceable personal icons**
-(<custom-emoji>, …) - brand/app logos default to Iconify
-(`selfhst:`/`simple-icons:`) like everything else. Source files + the
-set-by-id API protocol live in `<icon-manifest repo>`
-(`assets/notion-custom-emojis/` + README).
+**Workspace custom emoji are for irreplaceable personal icons** - brand/app
+logos default to Iconify (`selfhst:`/`simple-icons:`) like everything else.
 
 Set via API as external URLs:
 
@@ -91,9 +87,8 @@ Set via API as external URLs:
 - **No mono/tinted silhouettes as Notion page icons** (game-icons etc.) - the
   flat one-color look clashes with Noto. If a set with CC BY licensing ever IS
   used on a published site, it needs attribution.
-- **Manual-only icon workflows stage in `<icon staging folder>/`**
-  (`1password-icons/`, `ios-shortcut-icons/`, `macos-custom-app-icons/`).
-  1Password item icons have no API/CLI - export PNGs (the selfhst CDN serves
-  them directly) to `1password-icons/` for manual upload.
+- **Manual-only icon workflows stage files for a human upload.** 1Password
+  item icons have no API/CLI - export PNGs (the selfhst CDN serves them
+  directly) to a staging folder for manual upload.
 - **Never SF Symbols** outside Apple-platform app UI (license forbids), never
   Font Awesome / Flaticon / Icons8 / freemium tiers (Hugeicons, Streamline).

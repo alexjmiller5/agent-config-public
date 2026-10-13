@@ -1,6 +1,6 @@
 ---
 name: cherri
-description: The Cherri programming language - write, compile, and debug iOS Shortcuts as code (.cherri files). Use for ANY task touching a .cherri file, the ios-shortcuts repo, writing or modifying an iOS/macOS Shortcut programmatically, or questions about Cherri syntax, actions, includes, glyphs, or compile errors. Bundles the complete cherrilang.org/language docs as local references - consult them instead of guessing syntax or searching the web.
+description: The Cherri programming language - write, compile, and debug iOS Shortcuts as code (.cherri files). Use for ANY task touching a .cherri file or a Shortcuts-as-code repo, writing or modifying an iOS/macOS Shortcut programmatically, or questions about Cherri syntax, actions, includes, glyphs, or compile errors. Bundles the complete cherrilang.org/language docs as local references - consult them instead of guessing syntax or searching the web.
 ---
 
 # Cherri
@@ -21,7 +21,7 @@ cherri --docs=<query>              # search the documentation
 cherri file.cherri -d              # also emit the .plist - grep it to verify compiled actions
 ```
 
-In the ios-shortcuts repo, compile via `just compile <file>` (runs `scripts/compile-shortcut.sh`: substitutes `<<constant:NAME>>` from constants.txt, `<<secret:NAME>>` via `op inject` from a vault). **Claude's shell cannot read that vault** - to compile-validate, sed the placeholders to dummies in a scratch copy:
+A shortcuts repo can wrap compilation (placeholder substitution for constants and secrets, plist post-patches); follow its AGENTS.md. When placeholders resolve from a secret store your shell cannot read, compile-validate a scratch copy with the placeholders replaced by dummies:
 
 ```bash
 sed -E -e 's|<<(secret|constant):([A-Za-z_0-9]+)>>|DUMMY_\2|g' file.cherri > /tmp/check.cherri && cherri /tmp/check.cherri --skip-sign
@@ -54,8 +54,8 @@ for item in @list { ... }
 5. **`show()` blocks the flow with a modal; `showNotification(body, ?title)` is async** - prefer notifications for fire-and-forget status.
 6. **JSON `null` reads back as empty text** - `"{value}"` of a null is `""`, testable with `if !@var`.
 7. `nothing()` after unused action outputs frees runtime memory; statement blocks add it automatically at their end.
-8. **File-typed form values are inexpressible in cherri v2.3** - dictionary items only support text/number/bool/array/dict, so a multipart file upload (`formRequest` with a file field) compiles to an empty form value that silently uploads nothing. The working structure is `WFItemType: 5` + `WFTokenAttachmentParameterState`; the ios-shortcuts repo post-patches it via `scripts/patch-shortcut-plist.py` in its compile pipeline.
-9. **`embedFile()` resolves paths relative to cherri's CWD, not the source file** - run the compiler from the `.cherri` file's directory (the ios-shortcuts compile script does this) or asset references like `assets/foo.mp3` fail when compiling from the repo root. (`base64File` from the docs doesn't exist in cherri v2.3; the action is `embedFile`.)
+8. **File-typed form values are inexpressible in cherri v2.3** - dictionary items only support text/number/bool/array/dict, so a multipart file upload (`formRequest` with a file field) compiles to an empty form value that silently uploads nothing. The working structure is `WFItemType: 5` + `WFTokenAttachmentParameterState`; post-patch the compiled plist into that shape in your compile pipeline.
+9. **`embedFile()` resolves paths relative to cherri's CWD, not the source file** - run the compiler from the `.cherri` file's directory or asset references like `assets/foo.mp3` fail when compiling from the repo root. (`base64File` from the docs doesn't exist in cherri v2.3; the action is `embedFile`.)
 
 ## References (complete cherrilang.org/language docs, local)
 
