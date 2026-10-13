@@ -41,11 +41,13 @@ verdict gc                   # end of session: purge, kill orphan waits, list st
    sentence; the page carries the detail. Several pages in flight? Send each
    link as it publishes; never hold links back until the others are ready.
    Published twice by mistake? `verdict close` the extra right away.
-3. Arm a wake-up right after publishing. Where the environment has a waker
-   that messages your session when a command returns (a Herdr pane waker
-   such as `agent-wake verdict <id>`), arm it and keep working: Done reaches
-   you without polling, and the page tells the reviewer an agent is
-   listening. Without one, `verdict wait <id>` in the foreground when the
+3. Arm a wake-up right after publishing. A configured publish hook
+   (`VERDICT_PUBLISH_HOOK`) may already have done it: publish then prints
+   its output (e.g. `armed <id>: wakes pane ...`) on stderr, and you arm
+   nothing more. Otherwise, where the environment has a waker that messages
+   your session when a command returns (a Herdr pane waker such as
+   `agent-wake verdict <id>`), arm it and keep working: Done reaches you
+   without polling, and the page tells the reviewer an agent is listening. Without one, `verdict wait <id>` in the foreground when the
    review is the next step; otherwise continue other work and `verdict show
    <id>` when the user says they are done. Never leave a `wait` running in
    the background past the session: if you backgrounded one, kill it before
