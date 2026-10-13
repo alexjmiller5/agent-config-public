@@ -7,12 +7,16 @@
 Auth: GROUPME_TOKEN env var (dev.groupme.com > Access Token). Only GET requests are ever made.
 A conversation is a group id, a unique piece of a group's name, or dm:<other_user_id> for a DM thread.
 Output: NDJSON on stdout; scan accounting on stderr.
+
+search reads a local archive (GROUPME_ARCHIVE, default ~/.cache/groupme/archive.sqlite). The first search of a
+conversation pages its whole history into it (minutes for a big group); every later search fetches only what is new.
 """
 
 import argparse
 import json
 import os
 import re
+import sqlite3
 import sys
 import threading
 import time
@@ -20,6 +24,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from datetime import UTC, datetime
 
 API = "https://api.groupme.com/v3"
@@ -100,16 +105,77 @@ def conversation(conv):
     return f"/groups/{conv}/messages", {"limit": 100}, "messages"
 
 
-def walk(conv, before_id=None):
-    """Messages newest first, paging back until history runs out."""
+def pages(conv, before_id=None):
+    """Pages of messages, newest first, until history runs out."""
     path, base, key = conversation(conv)
     while True:
         params = dict(base, **({"before_id": before_id} if before_id else {}))
         rows = (get(path, params) or {}).get(key) or []
         if not rows:
             return
-        yield from rows
+        yield rows
         before_id = rows[-1]["id"]
+
+
+def walk(conv, before_id=None):
+    for page in pages(conv, before_id):
+        yield from page
+
+
+def archive():
+    path = os.environ.get("GROUPME_ARCHIVE") or os.path.join(
+        os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "groupme", "archive.sqlite"
+    )
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    db = sqlite3.connect(path, timeout=120)
+    os.chmod(path, 0o600)  # other people's messages: owner-only
+    db.execute("PRAGMA journal_mode=WAL")
+    db.executescript(
+        """CREATE TABLE IF NOT EXISTS messages (conv TEXT, id TEXT, created_at INTEGER, raw TEXT, PRIMARY KEY (conv, id));
+        CREATE INDEX IF NOT EXISTS messages_time ON messages (conv, created_at);
+        CREATE TABLE IF NOT EXISTS backfill (conv TEXT PRIMARY KEY, oldest_id TEXT, complete INTEGER NOT NULL DEFAULT 0);"""
+    )
+    return db
+
+
+def store(db, conv, page):
+    """Upsert one page (likes change after the fact); returns how many of its messages were already archived."""
+    ids = [m["id"] for m in page]
+    known = db.execute(
+        f"SELECT count(*) FROM messages WHERE conv = ? AND id IN ({','.join('?' * len(ids))})", (conv, *ids)
+    ).fetchone()[0]
+    db.executemany(
+        "INSERT OR REPLACE INTO messages VALUES (?, ?, ?, ?)",
+        [(conv, m["id"], m["created_at"], json.dumps(m)) for m in page],
+    )
+    return known
+
+
+def sync(db, conv):
+    """Newest pages until one is fully archived, then finish an interrupted backfill. Progress commits per page."""
+    row = db.execute("SELECT oldest_id, complete FROM backfill WHERE conv = ?", (conv,)).fetchone()
+    fresh = row is None
+    oldest, complete = row or (None, 0)
+    if fresh:
+        db.execute("INSERT INTO backfill (conv) VALUES (?)", (conv,))
+        db.commit()
+    for page in pages(conv):
+        known = store(db, conv, page)
+        if fresh:  # on a first sync the head walk is the backfill
+            oldest = page[-1]["id"]
+            db.execute("UPDATE backfill SET oldest_id = ? WHERE conv = ?", (oldest, conv))
+        db.commit()
+        if known == len(page):
+            break
+    else:
+        complete = 1
+    if not complete and oldest:
+        for page in pages(conv, oldest):
+            store(db, conv, page)
+            db.execute("UPDATE backfill SET oldest_id = ? WHERE conv = ?", (page[-1]["id"], conv))
+            db.commit()
+    db.execute("UPDATE backfill SET complete = 1 WHERE conv = ?", (conv,))
+    db.commit()
 
 
 def forward(conv, after_id):
@@ -160,13 +226,18 @@ def cmd_chats(_):
 
 
 def scan(conv, a, label=None):
-    pattern, since = re.compile(a.pattern, re.IGNORECASE), epoch(a.since) if a.since else None
+    pattern, since = re.compile(a.pattern, re.IGNORECASE), epoch(a.since) if a.since else 0
     sender = (a.sender or "").lower()
     scanned = hits = 0
     oldest = None
-    for m in walk(conv):
-        if since is not None and m["created_at"] < since:
-            break
+    with closing(archive()) as db:
+        sync(db, conv)
+        rows = db.execute(
+            "SELECT raw FROM messages WHERE conv = ? AND created_at >= ? ORDER BY created_at DESC, length(id) DESC, id DESC",
+            (conv, since),
+        ).fetchall()
+    for (raw,) in rows:
+        m = json.loads(raw)
         scanned, oldest = scanned + 1, m["created_at"]
         if pattern.search(m.get("text") or "") and sender in (m.get("name") or "").lower():
             hits += 1
@@ -177,19 +248,34 @@ def scan(conv, a, label=None):
     )
 
 
-def cmd_search(a):
-    if a.conversation != "all":
-        return scan(resolve(a.conversation), a)
-
+def every_group(fn):
     def one(g):
         try:
-            scan(g["id"], a, g.get("name"))
+            fn(g)
         except ApiError as e:
             print(f"{e} in {g.get('name')}", file=sys.stderr)
 
-    # ponytail: 6 parallel group scans; lower it if GroupMe starts answering 429
+    # ponytail: 6 groups at a time; lower it if GroupMe starts answering 429
     with ThreadPoolExecutor(6) as pool:
         list(pool.map(one, listing("/groups")))
+
+
+def cmd_search(a):
+    if a.conversation != "all":
+        return scan(resolve(a.conversation), a)
+    every_group(lambda g: scan(g["id"], a, g.get("name")))
+
+
+def cmd_sync(a):
+    def one(conv, label):
+        with closing(archive()) as db:
+            sync(db, conv)
+            n = db.execute("SELECT count(*) FROM messages WHERE conv = ?", (conv,)).fetchone()[0]
+        print(f"groupme: {n} messages archived for {label}", file=sys.stderr)
+
+    if a.conversation != "all":
+        return one(resolve(a.conversation), a.conversation)
+    every_group(lambda g: one(g["id"], g.get("name")))
 
 
 def cmd_history(a):
@@ -212,8 +298,11 @@ def main(argv=None):
     s.add_argument("conversation", help="a conversation, or all = every group you are in (hits carry the group name)")
     s.add_argument("pattern", help="regex; '' matches every message (use with --from)")
     s.add_argument("--from", dest="sender", help="only messages whose sender name contains this (case-insensitive)")
-    s.add_argument("--since", help="stop paging at this UTC date/datetime (YYYY-MM-DD[THH:MM:SS])")
+    s.add_argument("--since", help="only messages at or after this UTC date/datetime (YYYY-MM-DD[THH:MM:SS])")
     s.set_defaults(fn=cmd_search)
+    y = sub.add_parser("sync", help="build or refresh the local archive (all = every group you are in)")
+    y.add_argument("conversation")
+    y.set_defaults(fn=cmd_sync)
     h = sub.add_parser(
         "history", help="read a window: latest, before a message (newest first), or after it (oldest first)"
     )

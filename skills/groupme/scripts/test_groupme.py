@@ -4,6 +4,8 @@ import importlib.machinery
 import importlib.util
 import io
 import json
+import os
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -44,6 +46,19 @@ class FakeAPI:
         return {"count": len(self.messages), self.key: rows} if rows else None
 
 
+class Isolated(unittest.TestCase):
+    """Each test gets its own archive file, so no test sees another's cache."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.env = patch.dict(os.environ, {"GROUPME_ARCHIVE": os.path.join(self.tmp.name, "archive.sqlite")})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+        self.tmp.cleanup()
+
+
 def run(argv, api):
     out = io.StringIO()
     with patch.object(gm, "get", api), redirect_stdout(out):
@@ -51,7 +66,7 @@ def run(argv, api):
     return [json.loads(line) for line in out.getvalue().splitlines()]
 
 
-class SearchTests(unittest.TestCase):
+class SearchTests(Isolated):
     def test_pages_back_through_all_history_case_insensitive(self):
         api = FakeAPI([msg(1, "Refund for dues"), msg(2, "hi"), msg(3, "no REFUND yet"), msg(4, "ok"), msg(5, "x")])
         hits = run(["search", "123", "refund"], api)
@@ -59,12 +74,11 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(api.calls[0][0], "/groups/123/messages")
         self.assertEqual([c[1].get("before_id") for c in api.calls], [None, "4", "2", "1"])
 
-    def test_since_stops_paging(self):
+    def test_since_filters_results(self):
         api = FakeAPI([msg(i, "refund") for i in range(1, 9)])
         since = gm.iso(1_700_000_000 + 6)[:19]
         hits = run(["search", "123", "refund", "--since", since], api)
         self.assertEqual([h["id"] for h in hits], ["8", "7", "6"])
-        self.assertLessEqual(len(api.calls), 2)
 
     def test_dm_uses_direct_messages(self):
         api = FakeAPI([msg(1, "refund?"), msg(2, "nope")], key="direct_messages")
@@ -90,7 +104,7 @@ class SearchTests(unittest.TestCase):
         )
 
 
-class HistoryTests(unittest.TestCase):
+class HistoryTests(Isolated):
     def test_before_and_after_windows(self):
         api = FakeAPI([msg(i, f"m{i}") for i in range(1, 11)], page=2)
         self.assertEqual(
@@ -105,7 +119,7 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual([h["id"] for h in run(["history", "9", "--limit", "2"], api)], ["5", "4"])
 
 
-class ListTests(unittest.TestCase):
+class ListTests(Isolated):
     def test_groups_include_former(self):
         pages = {
             "/groups": [[{"id": "1", "name": "EC", "messages": {"count": 9, "last_message_created_at": 0}}], []],
@@ -147,7 +161,7 @@ def group(i, name):
     return {"id": i, "name": name, "messages": {"count": 1, "last_message_created_at": 0}}
 
 
-class FilterAndScopeTests(unittest.TestCase):
+class FilterAndScopeTests(Isolated):
     def test_sender_filter_with_empty_pattern(self):
         api = FakeAPI([msg(1, "a", name="Pat Lee"), msg(2, "b", name="Sam"), msg(3, "c", name="pat q")])
         self.assertEqual([h["id"] for h in run(["search", "1", "", "--from", "PAT"], api)], ["3", "1"])
@@ -172,6 +186,52 @@ class FilterAndScopeTests(unittest.TestCase):
 
     def test_left_group_404_explains(self):
         self.assertIn("left", str(gm.ApiError(404, "/groups/1/messages", "")))
+
+
+class ArchiveTests(Isolated):
+    def test_second_search_reads_the_archive(self):
+        api = FakeAPI([msg(i, "refund" if i % 2 else "x") for i in range(1, 8)])
+        first = run(["search", "123", "refund"], api)
+        calls = len(api.calls)
+        second = run(["search", "123", "refund"], api)
+        self.assertEqual(first, second)
+        self.assertEqual(len(api.calls) - calls, 1)  # one head page, already known
+
+    def test_new_messages_and_likes_are_picked_up(self):
+        api = FakeAPI([msg(i, "refund") for i in range(1, 6)])
+        run(["search", "123", "refund"], api)
+        api.messages[0]["favorited_by"] = ["a", "b"]
+        api.messages.insert(0, msg(6, "late refund"))
+        hits = run(["search", "123", "refund"], api)
+        self.assertEqual([h["id"] for h in hits][:2], ["6", "5"])
+        self.assertEqual(hits[1]["likes"], 2)
+
+    def test_interrupted_backfill_resumes(self):
+        api = FakeAPI([msg(i, "refund") for i in range(1, 10)])
+        real, n = api.__call__, {"calls": 0}
+
+        def flaky(path, params):
+            n["calls"] += 1
+            if n["calls"] == 3:
+                raise gm.ApiError(500, path, "")
+            return real(path, params)
+
+        with self.assertRaises(SystemExit):
+            run(["search", "123", "refund"], flaky)
+        first = len(api.calls)
+        hits = run(["search", "123", "refund"], api)
+        self.assertEqual([h["id"] for h in hits], [str(i) for i in range(9, 0, -1)])
+        self.assertEqual([c[1].get("before_id") for c in api.calls[first:]], [None, "6", "4", "2", "1"])  # resume at 6
+
+    def test_archive_is_owner_only(self):
+        run(["search", "123", "x"], FakeAPI([msg(1, "x")]))
+        self.assertEqual(os.stat(os.environ["GROUPME_ARCHIVE"]).st_mode & 0o777, 0o600)
+
+    def test_sync_all_skips_left_groups(self):
+        r = Router([group("7", "One"), group("8", "Gone")], {"7": FakeAPI([msg(1, "a")]), "8": 404})
+        run(["sync", "all"], r)
+        hits = run(["search", "7", "a"], Router([], {"7": FakeAPI([msg(1, "a")])}))
+        self.assertEqual([h["id"] for h in hits], ["1"])
 
 
 if __name__ == "__main__":

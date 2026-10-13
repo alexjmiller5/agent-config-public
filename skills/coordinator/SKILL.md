@@ -98,9 +98,11 @@ to the user with your recommendation, never answer an approval yourself.
 
 ## Report
 
-To the user, one table per turn: unit | worker | status | needs user. Then
-the numbered decisions. No per-worker essays. The user reads your text, not
-tool output, so anything they must see is restated in the message.
+To the user, one page per batch (the `verdict` skill, if available; else
+the message itself), updated in place each round: one table unit | worker |
+status | needs user, then the numbered decisions. No per-worker essays. Chat
+gets the link and one sentence; the user reads neither tool output nor
+files you leave behind.
 
 ## Finish
 
