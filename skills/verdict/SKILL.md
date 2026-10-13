@@ -138,8 +138,9 @@ ids.
 
 - Read `general` first: it can scope the rest ("only section A is done").
 - An item missing from `answers` was not answered: Done sends only what the
-  reviewer touched. Ask about it in one line or file it as a follow-up with
-  its details; never apply its recommendation on your own.
+  reviewer touched. Ask again on the same page (`verdict update`, next to
+  what you applied), or file it as a follow-up with its details when the
+  task can finish without it; never apply its recommendation on your own.
 - `defaulted: true` = the reviewer took the recommendation with an accept
   button. That is a decision; apply it.
 - A comment's `item` is the enclosing `data-item` or null; `snippet` is the
