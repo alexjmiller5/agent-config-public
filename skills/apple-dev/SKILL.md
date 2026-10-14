@@ -51,7 +51,7 @@ Local wins by one to two orders of magnitude while iterating. So:
 
 1. While iterating, build, sign and install from the build host: `just
    build`, `just deploy`, or `scripts/sign-ios.py` into `build/` plus the
-   install or `just ota`; macOS `just install`. Never push, tag or dispatch
+   `just ota` and the install; macOS `just install`. Never push, tag or dispatch
    CI only to get an installable build. Request a secret-manager unlock up
    front when local signing needs one.
 2. Before a long local build: at least 15 GB free, one build at a time on a
@@ -225,9 +225,14 @@ xcrun devicectl device process launch --device <udid> --console <bundle-id>
 
 ## Phone install
 
-A local build (while iterating) or the verified CI artifact (after the owner
-confirms) reaches the phone through the paired installer or an OTA page. Download, decrypt, and verify a CI IPA before these steps. Local Debug
-builds remain useful for readable device logs. Three install paths:
+A new installable iOS build always replaces its entry on the shared install
+page with `just ota`, including builds also installed over Wi-Fi or cable.
+Download, decrypt and verify a CI IPA before publishing it. Verify the served
+manifest and IPA match the intended version/build; give the owner the page URL.
+Publishing is a required delivery step, not a fallback for an unreachable phone.
+A delivered Debug `.app` also needs a verified Ad Hoc `.ipa` on the page; simulator
+builds do not. Local Debug builds remain useful for readable device logs.
+After publication, three phone install paths remain available:
 
 1. **Local network (default, try it first).** `IOS_INSTALL_HOST` makes `just
    build` / local `just deploy` do the hop. For a CI IPA, use the project's
