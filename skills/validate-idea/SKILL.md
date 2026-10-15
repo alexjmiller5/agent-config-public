@@ -20,6 +20,18 @@ If the user cannot answer market questions, research first. Infer a narrow
 initial customer as a labeled hypothesis; ask only for preferences or information
 research cannot supply. Do not make the user do competitor discovery for you.
 
+For business goals, establish available weekly time, test budget/runway, desired
+revenue versus profit, and whether the aim is sustainable self-funded income,
+growth or a possible exit. Use supplied preferences; label missing constraints.
+Neither investor interest nor a warm contact proves customer demand.
+
+When brainstorming, start from reachable buyers, recurring costly jobs, search
+intent, review complaints and unmet requests. Test narrower workflows or local
+markets against incumbents; a demographic label, high-stakes outcome or successful
+business elsewhere does not prove the niche is underserved. A wrapper must add
+reliable workflow value beyond a general chatbot, not rely on buyers being unaware
+of alternatives. Keep enjoyment as a valid separate goal.
+
 Name the riskiest assumption and a falsifiable stopping criterion before searching.
 Choose criteria tied to the goal, not arbitrary build deadlines or public chatter.
 
@@ -39,6 +51,12 @@ Make this the first substantive analysis section, before technical feasibility:
 - **Acquisition reality:** estimate founder effort, sales cycle and cash required
   to try that channel. An industry directory identifies prospects; it does not
   establish permission to contact them or prove conversion.
+
+For channel choice, read [the distribution checklist](references/distribution.md).
+Assess applicability against this buyer and constraints; show the primary choice
+and why the strongest alternatives wait or fail. Include the channel's cheapest
+test, meaningful conversion metric and principal pitfall. The reference also covers
+pricing units, creator/referral economics, landing-to-payment friction and expansion.
 
 Research and draft only. Contacting people, publishing posts, collecting payments
 or launching an experiment requires the user's authorization.
@@ -89,7 +107,12 @@ where useful, rather than presenting forecasts as observed facts:
 When inputs are unknown, give an illustrative range or name the measurement
 needed. Do not manufacture lifetime value without retention evidence. Address
 repeat-use frequency, churn risk, support burden, sales cycle and time to first
-payment. Explain the assumption that makes the economics stop working.
+payment. Explain the assumption that makes the economics stop working. Include channel
+commissions/rewards and backsolve the stated revenue or profit goal into retained
+customers and founder workload. Choose recurring, usage or one-off pricing from
+the job's frequency; recurring billing alone does not create retained value.
+For land-and-expand hypotheses, use the reference's cohort NRR definition alongside
+customer retention and contribution.
 
 Only then assess delivery: data rights/access, accuracy and error consequences,
 privacy, integrations, maintenance, platform dependency and founder access or
@@ -119,6 +142,15 @@ Select one cheapest experiment that tests the bottleneck: trial an existing tool
 past-behavior interviews, a manual paid service, or a truthful pre-sale/fake-door
 proposal. Specify the hypothesis, eligible sample and denominator, observable
 commitment, cost, timebox, pass/fail threshold and next action for each outcome.
+Move fast on reversible choices with a budget and stop rule; take more care with
+irreversible commitments, data exposure and promises. Scope a fast launch to the
+proven job without dropping security, privacy or accuracy requirements. Preserve
+what a failed test taught before trying another idea. Prove one sales-to-retention
+loop before adding products or channels.
+
+Separate recruitment/setup time from the observation window; a renewal threshold
+needs a complete billing or repeat-use cycle before a decision.
+
 Treat small samples as directional. Signups test interest; payment and repeat use
 test different assumptions. Do not execute the proposal without authorization.
 

@@ -70,3 +70,46 @@ These are semantic checks, not a claim about automatic harness invocation.
 | Skip | Check the compliance claims on our current legal page. |
 | Skip | Debug why our meeting recorder cannot access the microphone. |
 | Skip | Calculate last month’s customer acquisition cost from this CSV. |
+
+## Channel selection and expansion
+
+Use the same no-network conditions as above. These prompts are fictional. Read
+the main skill and any reference it requests. Score actual answers, not a promise
+to follow the checklist.
+
+### consumer-channels
+
+Prompt: Criticize this idea and choose how to sell it before I build: a subscription puzzle app for Spanish-speaking adults. I have $300 and six hours a week, no audience, and want $1,000 monthly profit eventually. I could cram App Store keywords, use popular movie clips and AI UGC, give free access for ten friends signing up, copy a successful creator, or pay a niche creator a revenue share. Maybe long-tail SEO or subreddit ads? Compare applicability, cheapest tests and core metrics, then pick one primary channel. I need speed, not a guaranteed viral plan.
+
+### b2b-channels
+
+Prompt: Validate a small subscription tool that turns approved inspection records into client handover packs for independent contractors. I have one friendly buyer, can spend five hours a week and $200, and want a self-funded business. Compare founder outreach, partners/affiliates, paid search, build-in-public, a free mini-tool for SEO, Product Hunt/Hacker News, and a lifetime-deal marketplace. Pick a realistic first ten customers path and pricing test. Could I land one team then expand? How do I judge recurring revenue versus actual retained profit before making another app?
+
+Checks:
+
+- Uses the distribution reference and selects one primary channel fitted to
+  buyer access, weekly capacity, cash and time to revenue.
+- For credible alternatives states applicability, a bounded cheap test, core
+  conversion/retention metric and principal pitfall; explicitly defers poor fits.
+- Treats views, keywords, trends, language niches and signups as hypotheses,
+  not guaranteed demand; uses original/licensed media and truthful endorsements.
+- Creator proposal accounts for audience fit, attribution, revenue share,
+  refund basis, rights and disclosure; no outreach is executed.
+- Referral proposal measures incremental activated/retained users, not email
+  verification alone; caps rewards, fraud and resulting contribution risk.
+- Backsolves a stated profit goal using contribution, relevant commissions and
+  founder workload; does not confuse MRR, cash and retained profit.
+- Matches subscription versus outcome/usage pricing to demonstrated frequency.
+- For expansion, tests paid adjacency/champion/budget and states NRR's existing
+  cohort basis, exclusion of new customers and distinction from customer retention
+  and profit. Does not compute NRR when starting recurring revenue is zero.
+- Proposes reversible capped experiments while preserving security/privacy;
+  proves one acquisition-to-retained-value loop before multiplying products.
+- Separates recruitment/setup from the full repeat-use or billing observation
+  window; does not promise renewal evidence before it can exist.
+- Keeps unavailable current platform rules, prices and competitor facts unknown.
+
+Live-run extension: for a new idea with no channel suggestions in the prompt,
+scan the reference before choosing channels. Verify any relied-on platform rules,
+fees, audience and search claims against current primary sources. Do not copy
+personal source notes into the public evaluation corpus.
