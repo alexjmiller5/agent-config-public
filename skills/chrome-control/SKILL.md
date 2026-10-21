@@ -558,18 +558,22 @@ asked to keep it, and then identify what remains in chat.
 
 ## Human handoff
 
-CDP attaches to a **visible** browser, so the user can help. When you hit a login
-wall, CAPTCHA, MFA prompt, or a page you can't navigate to, **stop and ask** -
-state what you need, why, and what happens next:
+A login wall is a reason to try the supported sign-in flow, not an automatic
+handoff. For an authorized account task, load the password-manager skill and
+resolve the saved account and sign-in method first. Use the existing session,
+saved-credential/autofill flow, or password-manager-supported login. For
+"Sign in with Google/Apple", click the provider button, select the account
+matching the saved login, and complete ordinary returning-user OAuth screens.
+An already authenticated provider session may sign the user in without a
+password. Verify that the requested account page actually loads afterward.
 
-> "I need you to log into the account page and get to the orders list, then
-> tell me when you're there - I'll be capturing traffic the whole time."
+One matching saved account resolves the choice. If several accounts genuinely
+match, ask which to use; never guess from the browser's signed-in accounts.
+Keep secret values out of tool output, files, process arguments and chat.
 
-Before asking which account to use at a login wall, check the user's
-password manager skill, if the setup has one: it knows which logins exist
-for that site. One match is the account; several mean asking the user to
-choose among them, not guessing from the browser's signed-in sessions.
-
-**Never attempt to automate past a credential or CAPTCHA wall.** Hand it to
-the user. This is the safety boundary that keeps the tooling pointed at sites they
-legitimately has access to.
+Ask the user only when a concrete step needs them: inaccessible credentials,
+provider reauthentication the supported tools cannot complete, MFA approval,
+a passkey requiring their presence, a CAPTCHA, or new/broader permissions.
+Do not bypass security challenges or grant unrelated account permissions.
+State the exact blocking step and what was already attempted; a generic
+"please log in" before trying the saved sign-in method is unfinished work.
