@@ -41,7 +41,7 @@ Make this the first substantive analysis section, before technical feasibility:
 
 - **Buyer and user:** who experiences the pain, who controls budget, what event
   creates urgency, and what they spend or lose today.
-- **Initial offer:** one narrow outcome, why switch from today's behavior, what
+- **Initial offer:** one narrow outcome, why buy or switch from today's behavior, what
   proof would earn trust, and a plausible charging unit. "AI-powered" is not an
   outcome. Include purchase blockers such as confidentiality or procurement.
 - **First ten customers:** choose one primary channel and a specific prospect
@@ -74,6 +74,11 @@ billing unit, important limits, and a source with access date. Quote-only pricin
 stays unknown. Check recent platform changes, releases and access/data terms when
 they affect the thesis; a new interface alone does not prove the pain is solved.
 Find failed attempts and verified reasons when a repeated idea looks like a trap.
+
+Verified competitor payments or revenue are positive evidence of existing demand.
+Distinguish that evidence from mere existence, published prices or unverified
+revenue claims. A small obtainable share can support the user's business goal;
+a new feature, underserved niche or technical moat is not a prerequisite.
 
 Look for recent examples of repeated pain, existing spend, switching and retained
 use. Distinguish observed behavior from compliments, waitlist signups, upvotes
@@ -116,9 +121,10 @@ customer retention and contribution.
 
 Only then assess delivery: data rights/access, accuracy and error consequences,
 privacy, integrations, maintenance, platform dependency and founder access or
-expertise. Identify a narrow advantage an incumbent cannot trivially bundle;
-"better AI" alone is weak differentiation. No architecture or build roadmap is
-needed to test whether someone will buy a manual service.
+expertise. Feature parity can be viable when customer reach, paid value,
+retention and acquisition economics work. Evaluate that route to customers rather
+than requiring a feature advantage an incumbent cannot copy. No architecture or
+build roadmap is needed to test whether someone will buy a manual service.
 
 For **own use/fun**, replace sales economics with usage frequency, friction saved,
 build/maintenance cost and actual enjoyment. An existing tool can still fail on
@@ -129,7 +135,7 @@ privacy, offline use or workflow. Trial it before assuming that gap exists.
 Choose one, with the strongest supporting and opposing evidence:
 
 - **Build:** enough evidence of utility, and for a business a credible buyer,
-  paid outcome, gap, reachable sales channel and sustainable economics. Scope
+  paid outcome, reachable sales channel and sustainable economics. Scope
   the build to the proven job.
 - **Investigate:** a decisive assumption is unresolved; name it and its test.
   Missing evidence does not make a commercial idea a hobby or a failed idea.
@@ -163,7 +169,7 @@ omitting business sections for a purely personal or hobby idea:
 2. **Selling:** buyer/user, initial niche and offer, primary channel, first-ten
    conversion path, trust/switching blockers.
 3. **Current alternatives:** compact sourced capability/pricing comparison and
-   the specific remaining gap. Mark unverified claims.
+   evidence of paid demand and the route to winning customers. Mark unverified claims.
 4. **Economics and viability:** price hypothesis, acquisition/contribution ranges
    or unknowns, retention/support and delivery risks.
 5. **Case for / case against:** decisive evidence, unknowns and stopping criterion

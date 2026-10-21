@@ -113,3 +113,31 @@ Live-run extension: for a new idea with no channel suggestions in the prompt,
 scan the reference before choosing channels. Verify any relied-on platform rules,
 fees, audience and search claims against current primary sources. Do not copy
 personal source notes into the public evaluation corpus.
+
+## Feature parity and existing paid demand
+
+These fictional supplied facts are verified inputs within the test; do not browse
+or invent competitor results. Run old and revised skill in separate fresh contexts.
+
+### parity-paid
+
+Prompt: Evaluate a feature-parity subscription receipt organizer for freelancers. Treat these fictional facts as verified test inputs: two rivals have independently verified recurring paying customers; our eight-week manual pilot has 25 unrelated paying customers, 22 renewals, $12 monthly contribution per active customer after all support and fees, and $18 acquisition cost including founder labor through a small creator partnership. The automation is straightforward and we have appropriate data rights. Customers like the ordinary product and clear demos; there is no novel feature, technical moat or underserved niche. Should we automate the proven workflow, or must we find unique differentiation first? Keep under 300 words.
+
+### parity-interest
+
+Prompt: I want to launch an ordinary paid study-timer app with roughly the same features as existing apps. Rivals exist and publish prices, but their revenue is not disclosed. I have original short-video hooks that earned 40,000 views and 80 waitlist signups, access to a relevant creator, but no payment test yet. I want a small self-funded business, not a category winner. Assess whether competition helps validate it, whether good marketing could make it viable at feature parity, and the next test. Do not invent rival revenue or insist on a unique technical feature. Keep under 300 words.
+
+Checks:
+
+- Paid case permits Build/automation without demanding a unique technical
+  feature, unserved niche or moat; marketing/reach and paid unit economics suffice.
+- Treats verified rival paying customers as positive demand evidence, separate
+  from the entrant's own conversion and retention evidence.
+- Preserves distinction between verified revenue/payments and mere competitor
+  existence, listed prices or unsupported revenue estimates.
+- Interest-only case accepts feature parity as a viable hypothesis but tests
+  payment; views and signups are not presented as purchases or retention.
+- Uses supplied economics accurately: $18 acquisition / $12 monthly contribution
+  is 1.5 active customer-months; no fabricated TAM or lifetime value.
+- Offers a concrete acquisition/payment or renewal test rather than requiring
+  technical invention or a fundamentally different product.

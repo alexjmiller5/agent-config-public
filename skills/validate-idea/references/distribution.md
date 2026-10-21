@@ -15,7 +15,7 @@ rules, availability, fees and audience before relying on them.
 | Paid search | Buyers actively search for a defined solution with purchase intent | Inspect intent and competition, then propose a capped ad-to-offer test | Paid conversion, contribution-adjusted acquisition cost and payback | Keyword volume is not buyer intent; click cost without conversion/retention makes a cheap lead expensive |
 | Paid social and subreddit ads | A recognizable problem can be demonstrated to an available target audience | Compare a few original creative angles with fixed spend and a stop rule | Retained payer acquisition cost, not reach or click-through alone | Creative fatigue, weak targeting and tracking; one viral ad does not establish repeatability |
 | Long-tail SEO and educational content | Specific recurring searches match the buyer's job and useful original content can compete | One high-intent page, worked example or relevant video answering a real query | Qualified organic traffic -> activated users -> paying customers | Narrow keywords do not guarantee ranking; publishing, indexing and authority take time; faceless video is still a production workload |
-| App-store discovery and localization | Product is store-shaped; a language/region has a verified unmet job and viable payments/support | Compare local competitors and search intent; test accurate listing/demo messages with target-language users | Listing -> install -> activation -> paid renewal, by locale | Keyword stuffing and literal translation are not positioning; language, cultural fit, store terms and support all matter |
+| App-store discovery and localization | Product is store-shaped; a language/region has evidence of buyer demand and viable payments/support | Compare local competitors and search intent; test accurate listing/demo messages with target-language users | Listing -> install -> activation -> paid renewal, by locale | Keyword stuffing and literal translation are not positioning; language, cultural fit, store terms and support all matter |
 | Communities and Reddit | Buyers discuss the job in an accessible community whose rules permit participation | Read complaints and comments, then propose one useful answer, demo or honest waitlist test if allowed | Qualified conversations -> meaningful commitments; track source | Founder communities may contain peers rather than buyers; no spam, fake endorsements or promotion disguised as research; comments can convert but require attribution |
 | Launch platforms and deal marketplaces | Product/audience matches Product Hunt, Hacker News or AppSumo buyers | Verify fit and terms; propose one focused launch, not a launch tour | Qualified activation and retained buyers; net contribution after fees | Launch-day votes are not retention; lifetime deals create ongoing service liabilities and do not prove recurring revenue |
 | Build in public and owned audience | Actual buyers follow the subject and founder wants a sustainable public presence | One buyer-focused example or feature outcome with a measurable next action | Buyer replies, qualified leads and later paid conversion | Developer followers may never buy; privacy, attention cost and founder preference matter; audience building is not free |
@@ -36,6 +36,11 @@ and feature requests to generate hypotheses. Use original execution and assets
 or obtain appropriate rights. A feature request is not a purchase order; trend
 attention is not durable demand. Treat review authenticity and third-party
 traffic/revenue estimates as uncertain unless independently verified.
+
+Good hooks, creator reach and effective selling can acquire customers for an
+ordinary feature-parity product. Test that commercial route without demanding
+technical novelty; views establish interest, while paid conversion and retention
+establish different parts of viability.
 
 For organic or creator content, test hooks tied to a real customer need; relevant
 original demonstrations beat borrowed popularity as evidence. Neither famous
