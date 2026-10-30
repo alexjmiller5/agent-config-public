@@ -104,6 +104,11 @@ Alpha Vantage free returns only 100 daily closes per symbol. Tiingo gives full h
 - The text before the first `##` is the lead; each `##` heading opens a card.
   A decision is one HTML line, with a blank line before and after it.
 - Screenshots: `![what it shows](shot.png)` with the file next to `index.md`.
+- Inside HTML blocks such as `<details>`, use HTML for the contents too:
+  `<details><summary>Earlier version</summary><img src="earlier.png" alt="Earlier version"></details>`.
+  Markdown image syntax inside these blocks renders as literal text. After
+  publishing, expand every image dropdown in the browser and verify its images
+  load (`img.complete && img.naturalWidth > 0`).
 - HTML works too (`index.html`, or a single `.html` file). The server injects
   base styles for type, cards (`class="card"`), tables, images and both color
   schemes, so a page needs no `<style>`. If you add one, define colors as
