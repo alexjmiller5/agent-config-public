@@ -21,16 +21,22 @@ CLI is the whole contract.
 | designs, mockups, screenshots, rows to approve or categorize | a short status line while you work |
 | | one quick blocking question mid-task, through the harness's own question prompt when it has one |
 
-The reviewer's time is the scarce resource: one page per batch, never one
-page per question. Everything that follows on the same batch (a second round
-of questions, a correction, what you applied, the final report) goes on the
-same link with `verdict update`.
+The reviewer's time is the scarce resource: one page per decision batch or
+round, never one page per question. A new round gets a new page: follow-up
+questions, new evidence, what you applied and a substantive final report go
+through `verdict publish` with only the new material. Keep a short link back
+when context matters. Do not make the person scroll past an earlier round or
+replace content they have already seen.
+
+Use `verdict update` only when the user explicitly asks to edit that existing
+page. Preserve its answers and notes; an explicit edit is not permission to
+append later rounds to it.
 
 ## Flow
 
 ```bash
 verdict publish report.md --task <task id>   # prints the URL; also a directory, or - for stdin
-verdict update <id> report.md                # same link, new page; answers and notes stay
+verdict publish follow-up.md --task <task id> # a fresh page for the next round
 verdict wait <id>            # blocks until Done; prints the state JSON (exit 3 after 8 h)
 verdict show <id>            # read the state any time, e.g. when the user says "done" in chat
 verdict close <id>           # after acting on it; purged later by gc
@@ -39,7 +45,7 @@ verdict gc                   # end of session: purge, kill orphan waits, list st
 
 1. Write the page (contract below): a `.md` file, or a directory holding
    `index.md` (or `index.html`) with any screenshots next to it.
-2. `verdict publish` once. The URL is stdout, `id: <id>` is stderr. Put the
+2. `verdict publish` once for this round. The URL is stdout, `id: <id>` is stderr. Put the
    link in chat on its own line THE MOMENT publish returns, plus on the task
    record's links if the workspace has one. Say what you need in one
    sentence; the page carries the detail. Several pages in flight? Send each
@@ -55,21 +61,16 @@ verdict gc                   # end of session: purge, kill orphan waits, list st
    in the foreground when the review is the next step; otherwise continue
    other work and `verdict show <id>` when the user says they are done.
    Never leave a `wait` running in the background past the session.
-4. Read the answers (shape below) and act on them. Then put what you applied
-   on the same page with `verdict update` (an "Applied" section at the top)
-   and say it in one line in chat. `update` reopens a finished review and
-   reruns the publish hook, so the wake-up is armed again; on a review that
-   was still open the earlier wake-up is still waiting.
-5. The final report of a task is a page too, usually the batch page updated
-   one last time with what you applied. Its Done or Got it is a fresh one:
-   the Done that answered the decisions does not cover a report the
-   reviewer has not seen yet. Keep the session open until they press it;
-   their notes are your next instructions. Act on them, update the page,
-   and only then `verdict close` and end the session.
-6. `verdict close <id>` once you have acted on everything on it. A review
-   you consumed and did not close shows up as stale for everyone until it is
-   purged.
-7. `verdict gc` before the final message of any session that touched a
+4. Read the answers (shape below) and act on them. Close the consumed review
+   after everything on it is resolved. If there is substantive new material
+   to show, publish a fresh, focused page for that next round, with the task
+   link appended to its existing links. Leave the earlier page intact.
+5. A substantive final report is a fresh page too: show what changed and its
+   verification without copying the old questions. Its Done or Got it covers
+   only that new report. Keep the session open while a requested decision or
+   review remains. Do not create another page merely to acknowledge an
+   unchanged report, and do not send repeated unchanged completion reports.
+6. `verdict gc` before the final message of any session that touched a
    review. It kills orphan `verdict wait` processes on this machine, forgets
    dead waiters and lists stale reviews. A stale review you own is yours to
    finish or close; one you do not own is reported to the user, never
@@ -98,7 +99,7 @@ Alpha Vantage free returns only 100 daily closes per symbol. Tiingo gives full h
 
 <div data-item="prices" data-choices="Tiingo, Alpha Vantage as fallback|Alpha Vantage paid" data-default="Tiingo, Alpha Vantage as fallback">Price source</div>
 
-<div data-item="prices-note" data-input="anything else?">Notes</div>
+<div data-item="prices-note" data-input="anything else?" data-optional>Optional notes</div>
 ```
 
 - The text before the first `##` is the lead; each `##` heading opens a card.
@@ -120,11 +121,18 @@ Alpha Vantage free returns only 100 daily closes per symbol. Tiingo gives full h
 | `data-item="id"` | something to answer or annotate; `id` becomes the key in `answers` |
 | `data-choices="a\|b\|c"` | pick one; `\|` is the only separator, any other text is fine; `data-default` names the recommendation (else the first) |
 | `data-input="placeholder"` | free-text answer |
+| `data-optional` | an optional answer; saved normally but excluded from required progress and unanswered warnings |
 | `data-section="name"` | gets an "accept this section's recommendations" button for the choices inside it (every Markdown card is a section) |
 
 A page with no choices or inputs is a report: the reviewer gets a Got it
-button. Every element stays annotatable: in comment mode (Ctrl+Option+C) the
+button. A page with optional inputs still has Done, without requiring those
+inputs to be filled. Mark supplemental notes, corrections and additional
+instructions with `data-optional`; do not turn them into required questions.
+Every element stays annotatable: in comment mode (Ctrl+Option+C) the
 reviewer taps anything and types a note.
+
+Let the client supply review controls and its responsive pane; do not build a
+second Done interface.
 
 Keep the page plain: a lead saying what the batch is, one numbered section
 per decision or topic with the evidence (numbers, a table, a screenshot), the
@@ -142,10 +150,12 @@ ids.
 ```
 
 - Read `general` first: it can scope the rest ("only section A is done").
-- An item missing from `answers` was not answered: Done sends only what the
-  reviewer touched. Ask again on the same page (`verdict update`, next to
-  what you applied), or file it as a follow-up with its details when the
-  task can finish without it; never apply its recommendation on your own.
+- Done sends only what the reviewer touched. A nonblank item-linked comment
+  can answer a question without an entry in `answers`; read those comments
+  before declaring it unanswered. Blank optional fields need no follow-up.
+  If a required item is still unanswered, ask on a fresh follow-up page, or
+  record its details for later when the task can finish without it. Never
+  apply an untouched recommendation on your own.
 - `defaulted: true` = the reviewer took the recommendation with an accept
   button. That is a decision; apply it.
 - A comment's `item` is the enclosing `data-item` or null; `snippet` is the
