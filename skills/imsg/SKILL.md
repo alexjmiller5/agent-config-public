@@ -19,8 +19,9 @@ mirrored in [references/](references/) - consult them before guessing flags.
   machines, declare it in your config instead of installing ad-hoc).
   Only useful on a Mac signed into Messages.app.
 - Reads need Full Disk Access on the invoking context (the terminal app).
-  Verify: `sqlite3 ~/Library/Messages/chat.db 'pragma quick_check;'` - failure
-  means no FDA, see [references/permissions.md](references/permissions.md).
+  Probe with a bounded `sqlite3 -readonly ~/Library/Messages/chat.db 'SELECT 1;'`.
+  A hang does not establish missing FDA; follow the read-failure procedure below.
+  For an explicit denial, see [references/permissions.md](references/permissions.md).
 - First `imsg send` triggers an Automation → Messages TCC prompt that THE USER
   must click. If a send
   hangs or errors on permissions, stop and tell them.
@@ -73,6 +74,24 @@ and tell them after", "the previous send was approved so this one is too".
 
 ## Reading (no guard)
 
+### If CLI reads fail or hang
+
+Put a short timeout (about 10 seconds) around the first small read. Stop its
+process on timeout rather than stacking more blocked commands. Distinguish an
+explicit permission denial, a database-open hang, and a successful empty result.
+An existing Full Disk Access grant is not disproved by a hang.
+
+For diagnosis, use [troubleshooting](references/troubleshooting.md#reads-hang-without-an-error).
+For continued reading, load **mac-control**, if available, and open Messages.app:
+resolve the intended conversation, search its messages, and inspect attachments
+through the app. Use this fallback before asking the user to upload a document
+or change permissions. Search fields may retain their value: select all before
+replacing the query. For attachments, try an actual double-click, download, or
+Quick Look and verify the resulting document or error; an accepted automation
+event is not proof the file opened. Keep diagnosis separate from what the app
+actually shows, and do not call an unopened attachment a failed download without
+evidence. The send guard applies equally to app automation.
+
 ```bash
 imsg chats --limit 200 --json | jq -s          # list conversations
 imsg chats --unread-only --json | jq -s
@@ -112,8 +131,8 @@ imsg send --to "+15551234567" --file /absolute/path.jpg
 
 ## Gotchas
 
-- No output from a read? You're probably missing `jq -s` around NDJSON, or
-  the shell lacks FDA (run the quick_check above).
+- No output from a read? Check whether it completed, is waiting for NDJSON
+  aggregation, or is hung. Use the read-failure procedure above before blaming FDA.
 - Raw `sqlite3` against chat.db is a last resort (imsg already decodes the
   `attributedBody` blobs that hide ~93% of modern message text). If forced:
   timestamps are ns since 2001-01-01 -

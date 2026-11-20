@@ -1,8 +1,39 @@
-Most `imsg` issues come down to a permissions gate that hasn't taken effect yet, or a Messages.app behavior change on a recent macOS update. This page walks through the standard diagnoses.
+Distinguish explicit permission errors from hangs and empty successful reads.
+Investigate the failing layer before changing permissions.
+
+## Reads hang without an error
+
+Bound small probes to about 10 seconds and terminate each timed-out process.
+Compare `imsg --version`, `imsg chats --limit 1 --json`, and
+`sqlite3 -readonly ~/Library/Messages/chat.db 'SELECT 1;'`.
+`SELECT 1` tests the database-open path without scanning message contents;
+`pragma quick_check` can itself take time on a large database.
+
+- Version works but both database probes hang: investigate the file-open path,
+  not Contacts decoding or a chat query. Compare a harmless open in an ordinary
+  directory with an open in another privacy-protected directory.
+- A process sample stopped in `guarded_open_np` / `__guarded_open_np` locates the
+  wait before SQLite queries run. It does not by itself prove a missing grant.
+- Inspect the display using **mac-control**, if available. An unanswered folder
+  access dialog can leave the user `tccd` service waiting in
+  `CFUserNotificationReceiveResponse`; later protected-file requests may queue
+  behind it even when their own grants exist. Sample the current user's `tccd`
+  and inspect TCC logs to distinguish this from an ordinary denial. Ask the user
+  to resolve an unrelated process's permission prompt; do not approve unidentified
+  access or reset the TCC database. Retest the same small read after it is answered.
+- Preserve the distinction between a suspected cause and a verified fix. Avoid
+  toggling established Full Disk Access grants solely because a read timed out.
+
+Meanwhile use **mac-control** to read the intended conversation in Messages.app.
+Inspect attachments with double-click, download, or Quick Look and verify the
+visible result. A UI fallback can read messages while the CLI remains broken;
+it does not prove attachment downloads or automation are working.
 
 ## Reads return `unable to open database file`
 
-The terminal (or its parent process) doesn't have Full Disk Access yet.
+Check the responsible process's Full Disk Access grant. A generic SQLite open
+error alone is not enough to establish a missing grant; check the path and exact
+error too. Use the hang procedure above when the command does not return.
 
 1. **System Settings → Privacy & Security → Full Disk Access.**
 2. Add the terminal you're running `imsg` from.
@@ -15,10 +46,12 @@ If reads still fail, **toggle the entry off and back on**. Full Disk Access entr
 Confirm:
 
 ```bash
-sqlite3 ~/Library/Messages/chat.db 'pragma quick_check;'
+sqlite3 -readonly ~/Library/Messages/chat.db 'SELECT 1;'
 ```
 
-If `sqlite3` works but `imsg` doesn't, the parent process of `imsg` is still missing the grant. If `sqlite3` also fails, fix Full Disk Access first.
+If SQLite opens but `imsg` fails, compare their launch contexts and errors before
+changing grants. If both hang, inspect pending permission dialogs and the
+file-open path. An explicit TCC denial identifies a different case from a hang.
 
 A supervised `imsg rpc` child does not need to be restarted after this fix.
 Send a `status` request to retry the configured path; `database.ready` changes
