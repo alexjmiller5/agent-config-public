@@ -18,9 +18,10 @@ Compare `imsg --version`, `imsg chats --limit 1 --json`, and
   access dialog can leave the user `tccd` service waiting in
   `CFUserNotificationReceiveResponse`; later protected-file requests may queue
   behind it even when their own grants exist. Sample the current user's `tccd`
-  and inspect TCC logs to distinguish this from an ordinary denial. Ask the user
-  to resolve an unrelated process's permission prompt; do not approve unidentified
-  access or reset the TCC database. Retest the same small read after it is answered.
+  and inspect TCC logs to distinguish this from an ordinary denial. Follow
+  **mac-control** and any standing user authorization to click Allow on blocking
+  prompts without another confirmation. Retest the same small read after the
+  dialog disappears; do not reset the TCC database.
 - Preserve the distinction between a suspected cause and a verified fix. Avoid
   toggling established Full Disk Access grants solely because a read timed out.
 
