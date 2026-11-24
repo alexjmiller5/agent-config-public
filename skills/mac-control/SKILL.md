@@ -1,6 +1,6 @@
 ---
 name: mac-control
-description: See and drive a Mac's screen from a shell - screenshots, accessibility tree, clicking, typing, key presses, dismissing dialogs - locally or on a remote/headless Mac over ssh. Use for ANY native-app or system-dialog automation outside the browser (browser work goes through chrome-control), and whenever a task on a remote Mac needs eyes or hands on its display.
+description: See and drive a Mac's screen from a shell - screenshots, accessibility tree, clicking, typing, key presses, dismissing dialogs - locally or on a remote/headless Mac over ssh. Use for ANY native-app or system-dialog automation outside the browser (browser work goes through chrome-control), and whenever a task on a remote Mac needs eyes or hands on its display, or text needs to be copied to the user's clipboard.
 ---
 
 # Mac Control
@@ -15,6 +15,17 @@ Three tiers, cheapest first. Start at the lowest that fits.
 
 Browser content is never done with any of these - chrome-control (CDP) is
 exact and cheaper.
+
+## Clipboard handoff
+
+When asked to put text on the user's clipboard, or when copying selected text
+fails, use the installed `user-copy` command if the machine context provides
+it: pipe text on stdin, or run `user-copy < file`. Its configured destination
+owns routing; do not add hostname detection or wrap it in another SSH call.
+Pass sensitive text through stdin, never argv or logs. Exit 0 confirms the copy;
+propagate failures and never claim a remote copy succeeded after local fallback.
+Copying replaces the destination clipboard; it does not paste or submit text.
+Without a configured handoff command, `pbcopy` targets only the executing Mac.
 
 ## Tier 0: the built-in computer use (Claude Code)
 
