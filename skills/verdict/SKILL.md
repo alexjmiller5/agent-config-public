@@ -122,7 +122,7 @@ Alpha Vantage free returns only 100 daily closes per symbol. Tiingo gives full h
 | `data-choices="a\|b\|c"` | pick one; `\|` is the only separator, any other text is fine; `data-default` names the recommendation (else the first) |
 | `data-input="placeholder"` | free-text answer |
 | `data-optional` | an optional answer; saved normally but excluded from required progress and unanswered warnings |
-| `data-section="name"` | gets an "accept this section's recommendations" button for the choices inside it (every Markdown card is a section) |
+| `data-section="name"` | groups page content without adding review controls (every Markdown card is a section) |
 
 A page with no choices or inputs is a report: the reviewer gets a Got it
 button. A page with optional inputs still has Done, without requiring those
