@@ -38,6 +38,16 @@ record and reconcile the set of covered source IDs with the input inventory.
 Patient/demographic resources and references without bodies must also be
 accounted for, even when they remain only in the original archive.
 
+Inspect CDA Immunizations separately from Apple clinical FHIR: a provider's
+vaccination history may be present only in its CDA export. Source-qualify the
+immunization identifiers and deduplicate repeated entries across that
+institution's visit snapshots. A product code without `displayName` may point
+through `originalText/reference` to narrative text with an `ID` attribute.
+Resolve that source text instead of inventing a product name. Preserve mood,
+negation, status, dose, date precision and every differing source snapshot.
+Independent institutions can document the same historical vaccination; count
+source records separately from unique doses until the identities are verified.
+
 Verify saved fields and attachment bytes:
 
 ```sh
