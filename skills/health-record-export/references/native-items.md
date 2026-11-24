@@ -60,3 +60,28 @@ the requested destination cannot hold them. Current vendor references:
 [Epic record sharing](https://www.mychart.org/l/en-us/features/share/),
 [Apple export](https://support.apple.com/en-ie/guide/iphone/iph5ede58c3d/ios),
 [Apple medication list and logs](https://support.apple.com/en-us/105064).
+
+## When the Apple export lacks dose history
+
+The HealthKit medication APIs on supported systems distinguish user-tracked
+medications and dose events from provider prescriptions. A reader must have
+permission for each relevant medication, including archived medications and
+new ones added since the last export. See Apple's
+[medication API introduction](https://developer.apple.com/videos/play/wwdc2025/321/).
+
+Prefer a supported existing exporter before proposing a new app. Health Auto
+Export documents iPhone/iPad Manual Export with **Medications**, a selected
+date range and JSON Version 2. Its
+[medication schema](https://help.healthyapps.dev/en/health-auto-export/export-format/medications/)
+includes dose status, timestamps, quantities and units. Its
+[manual export instructions](https://help.healthyapps.dev/en/health-auto-export/manual-export/)
+are distinct from its Mac export, which documents metrics and workouts.
+Confirm the user's app choice, any cost, permissions and delivery destination
+before setup. A manual local export does not need the vendor's email delivery.
+
+Compare oldest/newest dates and representative Taken/Skipped events with the
+Health app. Keep other source statuses distinct; missing permission or an
+unlogged event is not proof that a dose was skipped. The documented exporter
+schema omits some raw HealthKit metadata, including event UUID and schedule
+type, and does not guarantee complete historical backfill. State that limit
+if the user requests every underlying field.
