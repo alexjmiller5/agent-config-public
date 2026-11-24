@@ -85,3 +85,30 @@ unlogged event is not proof that a dose was skipped. The documented exporter
 schema omits some raw HealthKit metadata, including event UUID and schedule
 type, and does not guarantee complete historical backfill. State that limit
 if the user requests every underlying field.
+
+## Separate My Documents files
+
+Open the confirmed institution's **Document Center > My Documents** in an owned
+browser tab, verify the patient/profile, and obtain that exact CDP target ID.
+With Node 22+ and `uv` available:
+
+```sh
+uv run scripts/mychart_documents.py --port <local-or-forwarded-CDP-port> \
+  --target '<owned-target-id>' --source '<confirmed-institution-label>' \
+  --out-dir '<private-temporary-directory>'
+```
+
+The helper reads the identified tab's session into memory, then uses the
+portal's observed `LoadOtherDocuments` and `GetDocumentDetails` retrieval
+endpoints. It follows the supplied download URL only within the same HTTPS
+origin. It neither signs documents nor submits record requests. It fails on
+expired sessions, malformed responses, repeated pagination and unexpected
+authentication HTML. Existing originals and completed receipts survive a
+partial failure; retry only after inspecting the cause.
+
+Compare the completed count with the fully expanded UI list. The private
+`manifest.jsonl` retains source metadata, identifiers, file paths, sizes and
+SHA-256 hashes. Upload originals with meaningful approved titles and filenames,
+verify them in 1Password, and retain the manifest in the user's export register.
+Encrypted portal IDs can depend on the session: reenumerate next time and use
+hashes and clinical provenance as well as identifiers for reconciliation.

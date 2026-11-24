@@ -5,9 +5,11 @@ import importlib.util
 import io
 import json
 import os
+import sqlite3
 import tempfile
+import threading
 import unittest
-from contextlib import redirect_stdout
+from contextlib import closing, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -189,6 +191,41 @@ class FilterAndScopeTests(Isolated):
 
 
 class ArchiveTests(Isolated):
+    def test_all_commands_initialize_archive_before_parallel_workers(self):
+        for command in (["sync", "all"], ["search", "all", "match"]):
+            with self.subTest(command=command), tempfile.TemporaryDirectory() as tmp:
+                path = os.path.join(tmp, "archive.sqlite")
+                start = threading.Barrier(6)
+                fetch = threading.Barrier(6)
+                real_archive = gm.archive
+
+                def archive(start=start, path=path, real_archive=real_archive):
+                    if threading.current_thread() is not threading.main_thread():
+                        start.wait(timeout=5)
+                        self.assertTrue(os.path.exists(path), "workers started before archive initialization")
+                        with closing(sqlite3.connect(f"file:{path}?mode=rw", uri=True)) as db:
+                            self.assertEqual(db.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+                            db.execute("SELECT conv FROM backfill")
+                    return real_archive()
+
+                router = Router(
+                    [group(str(i), f"Group {i}") for i in range(6)],
+                    {str(i): FakeAPI([msg(i, "match")]) for i in range(6)},
+                )
+
+                def api(endpoint, params, fetch=fetch, router=router):
+                    if endpoint.endswith("/messages") and "before_id" not in params:
+                        fetch.wait(timeout=5)  # Fetches must remain concurrent after initialization.
+                    return router(endpoint, params)
+
+                with patch.dict(os.environ, {"GROUPME_ARCHIVE": path}), patch.object(gm, "archive", archive):
+                    hits = run(command, api)
+                with closing(sqlite3.connect(path)) as db:
+                    self.assertEqual(db.execute("SELECT count(*) FROM messages").fetchone()[0], 6)
+                    self.assertEqual(db.execute("SELECT sum(complete) FROM backfill").fetchone()[0], 6)
+                if command[0] == "search":
+                    self.assertEqual({h["id"] for h in hits}, {str(i) for i in range(6)})
+
     def test_second_search_reads_the_archive(self):
         api = FakeAPI([msg(i, "refund" if i % 2 else "x") for i in range(1, 8)])
         first = run(["search", "123", "refund"], api)

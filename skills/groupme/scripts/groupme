@@ -249,6 +249,10 @@ def scan(conv, a, label=None):
 
 
 def every_group(fn):
+    # Finish WAL/schema initialization before worker connections can race it.
+    with closing(archive()):
+        pass
+
     def one(g):
         try:
             fn(g)

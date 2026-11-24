@@ -37,6 +37,13 @@ does not authorize choosing 1Password for the user. Live CLI use separately
 confirmed Medical Record template discovery, native fields, direct file
 attachments and exact-byte hash readback. The Agent Skills validator passed.
 
+The separate-documents helper has executable tests for pagination, exact
+original bytes, same-origin credential scope, authentication HTML, original
+file signatures, and interruption-safe file/receipt persistence. Deliberately
+removing origin validation, altering downloaded bytes, and bypassing atomic
+promotion were each caught by the tests. A direct source download also matched
+the bytes of the corresponding browser-initiated original.
+
 ## Trigger cases
 
 Should trigger: archive MyChart records; refresh an Epic health archive; import
