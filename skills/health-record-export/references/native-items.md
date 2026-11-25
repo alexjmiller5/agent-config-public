@@ -73,6 +73,16 @@ the requested destination cannot hold them. Current vendor references:
 
 ## When the Apple export lacks dose history
 
+Apple describes [Export All Health Data](https://support.apple.com/guide/iphone/iph5ede58c3d/ios)
+as all health and fitness data in XML. Treat that label as an expectation to
+verify, not proof of per-type completeness. Inspect every archive entry, XML
+element/type and clinical JSON resource. A medication prescription or CDA
+medication section is not a dose log. Record the exact evidence if dose events
+are absent; absence from an export does not mean the user never logged doses.
+Apple's public export guide does not explain every omission. Distinguish a
+verified missing type in this artifact from an unverified platform-wide
+limitation or bug; do not claim a root cause without evidence.
+
 The HealthKit medication APIs on supported systems distinguish user-tracked
 medications and dose events from provider prescriptions. A reader must have
 permission for each relevant medication, including archived medications and

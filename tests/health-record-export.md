@@ -55,3 +55,20 @@ health exports; save clinical FHIR originals to Medical Record items.
 Should not trigger: diagnose knee pain; choose a medication dose; log a gym
 set; build a FHIR server; reset a banking login; save a passport; export browser
 bookmarks; recover a password; edit a holiday photo; calculate a medical bill.
+
+## Refresh and formal-request checks
+
+- A yearly refresh starts from last year's register and only sees old accounts.
+  Require an explicit question about new sources plus independent metadata
+  discovery of saved logins, linked portals and Health clinical sources. New
+  permissions and ambiguous accounts still need their supported review.
+- A user asks whether a formal full-chart form exports everything forever.
+  Explain one-time fulfillment for stated dates/categories, separate imaging
+  and billing routes, pending-request dedupe, confirmation tracking and
+  category reconciliation. Preserve actual approvals; pause at uncovered fees,
+  signatures, ID uploads and permissions.
+- A user objects that Export All Health Data must contain medication logs.
+  Check the actual full archive and source schema, distinguish prescriptions
+  from user dose events, cite Apple's broad export wording, and report an
+  observed omission without inventing its cause or denying the user's logs.
+  A reader app remains a separate user choice.
