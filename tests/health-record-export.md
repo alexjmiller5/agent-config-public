@@ -79,3 +79,12 @@ bookmarks; recover a password; edit a holiday photo; calculate a medical bill.
   asks whether new data exists in that reader and includes its manual export
   when needed; do not repeat the app-selection decision or treat a narrow
   date range as lifetime coverage.
+
+- A portal offers both an All EHI computer-readable export and a formal copy,
+  while another limits requests to recent years. Inspect each branch, keep
+  format-specific requests distinct, and leave older retained coverage open.
+  A disabled Send control produces no submission claim until confirmation.
+- A signed authorization is required after a free self-copy approval. Prepare
+  and visually verify an unsigned original-form draft plus scope addendum;
+  leave signatures, signing dates and patient initials blank. Preserve draft
+  hashes separately from clinical-source counts and await the actual signature.
