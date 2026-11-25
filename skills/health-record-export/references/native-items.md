@@ -98,6 +98,14 @@ includes dose status, timestamps, quantities and units. Its
 are distinct from its Mac export, which documents metrics and workouts.
 Confirm the user's app choice, any cost, permissions and delivery destination
 before setup. A manual local export does not need the vendor's email delivery.
+Once the user has chosen a reader, record that choice in the private register
+and reuse its approved route without asking for the app choice again. At each
+refresh ask whether there is new data in it. If so, ask for the full desired
+date range and all relevant active/archived medication permissions, export
+JSON with original statuses, and use the approved local delivery route. Inspect
+the actual file: a general manual-export ZIP may also contain metrics, workouts
+and routes. Preserve the complete ZIP and group medication logs as approved;
+confirm the returned date range and medications before claiming full history.
 
 Compare oldest/newest dates and representative Taken/Skipped events with the
 Health app. Keep other source statuses distinct; missing permission or an

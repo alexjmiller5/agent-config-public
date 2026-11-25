@@ -20,7 +20,10 @@ vault, outside the skill or source control.
    sources. Compare with the register; add confirmed new sources and carry
    inaccessible ones as gaps. An old source list is not a closed inventory.
    Resolve ambiguous accounts with the user and verify the patient/profile
-   before acquisition. Discovery does not grant new permissions.
+   before acquisition. Discovery does not grant new permissions. Ask whether
+   new medication log data exists in the user's phone reader since the last
+   export; when it does, include its approved manual export and delivery in
+   this refresh rather than relying on the native Health ZIP alone.
 2. Inspect each institution's supported exports. Document Center commonly
    offers Visit Records, Requested Records and My Documents. Use All Visits
    where offered; otherwise record the actual selected date range. Retain the

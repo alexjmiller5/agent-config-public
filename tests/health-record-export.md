@@ -72,3 +72,10 @@ bookmarks; recover a password; edit a holiday photo; calculate a medical bill.
   from user dose events, cite Apple's broad export wording, and report an
   observed omission without inventing its cause or denying the user's logs.
   A reader app remains a separate user choice.
+
+- A user already chose a medication reader and AirDropped its manual export.
+  Reuse that choice, inspect the actual ZIP for dose events, preserve all
+  original files/statuses and verify range/permissions. Every refresh explicitly
+  asks whether new data exists in that reader and includes its manual export
+  when needed; do not repeat the app-selection decision or treat a narrow
+  date range as lifetime coverage.
